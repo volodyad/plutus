@@ -132,7 +132,7 @@ restricting (ExRestrictingBudget (ExBudget cpuInit memInit)) = ExBudgetMode $ do
             -- what the final state was.
             writeCpu cpuLeft'
             writeMem memLeft'
-            when (cpuLeft' < 0 || memLeft' < 0) $
+            when (cpuLeft' < 0) $
                 throwingWithCauseExc @(CekEvaluationException uni fun) _EvaluationError
                     (UserEvaluationError $ CekOutOfExError $ ExRestrictingBudget $ ExBudget cpuLeft' memLeft')
                     Nothing
