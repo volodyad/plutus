@@ -154,23 +154,23 @@ instance (GShow uni, GEq uni, uni `Includes` Integer) => ToBuiltinMeaning uni Ex
     toBuiltinMeaning Const =
         makeBuiltinMeaning
             const
-            (\_ _ _ -> ExBudget 1 0)
+            (\_ _ _ -> ExBudget 1)
     toBuiltinMeaning Id =
         makeBuiltinMeaning
             Prelude.id
-            (\_ _ -> ExBudget 1 0)
+            (\_ _ -> ExBudget 1)
     toBuiltinMeaning IdFInteger =
         makeBuiltinMeaning
             (Prelude.id
                 :: a ~ Opaque term (TyAppRep (TyVarRep ('TyNameRep "f" 0)) Integer)
                 => a -> a)
-            (\_ _ -> ExBudget 1 0)
+            (\_ _ -> ExBudget 1)
     toBuiltinMeaning IdList =
         makeBuiltinMeaning
             (Prelude.id
                 :: a ~ Opaque term (ListRep (TyVarRep ('TyNameRep "a" 0)))
                 => a -> a)
-            (\_ _ -> ExBudget 1 0)
+            (\_ _ -> ExBudget 1)
     toBuiltinMeaning IdRank2 =
         makeBuiltinMeaning
             (Prelude.id
@@ -179,10 +179,10 @@ instance (GShow uni, GEq uni, uni `Includes` Integer) => ToBuiltinMeaning uni Ex
                    , afa ~ Opaque term (TyForallRep a (TyAppRep (TyVarRep f) (TyVarRep a)))
                    )
                 => afa -> afa)
-            (\_ _ -> ExBudget 1 0)
+            (\_ _ -> ExBudget 1)
     toBuiltinMeaning Absurd =
         makeBuiltinMeaning
             (absurd
                 :: a ~ Opaque term (TyVarRep ('TyNameRep "a" 0))
                 => Void -> a)
-            (\_ _ -> ExBudget 1 0)
+            (\_ _ -> ExBudget 1)

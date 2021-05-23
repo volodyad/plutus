@@ -148,7 +148,6 @@ import           PlutusPrelude                          hiding (toList)
 import           PlutusCore.Core
 import           PlutusCore.Name
 
-import           Data.Semigroup.Generic
 import           Data.Text.Prettyprint.Doc
 import           Deriving.Aeson
 import           Language.Haskell.TH.Lift               (Lift)
@@ -176,19 +175,20 @@ class ExBudgetBuiltin fun exBudgetCat where
 instance ExBudgetBuiltin fun () where
     exBudgetBuiltin _ = ()
 
-data ExBudget = ExBudget { _exBudgetCPU :: ExCPU, _exBudgetMemory :: ExMemory }
+newtype ExBudget = ExBudget CostingInteger
     deriving stock (Eq, Show, Generic, Lift)
-    deriving (Semigroup, Monoid) via (GenericSemigroupMonoid ExBudget)
     deriving anyclass (PrettyBy config, NFData)
     deriving (FromJSON, ToJSON) via CustomJSON '[FieldLabelModifier (CamelToSnake)] ExBudget
+    deriving Num via CostingInteger
+instance Semigroup ExBudget where
+    (<>) = (+)
+instance Monoid ExBudget where
+    mempty = ExBudget 0
+
 
 instance Pretty ExBudget where
-    pretty (ExBudget cpu memory) = parens $ fold
-        [ "{ cpu: ", pretty cpu, line
-        , "| mem: ", pretty memory, line
-        , "}"
-        ]
+    pretty (ExBudget _cpu) = parens $ fold
+        [ "{ cpu: ",  "}" ]
 
 newtype ExRestrictingBudget = ExRestrictingBudget ExBudget deriving (Show, Eq)
-    deriving (Semigroup, Monoid) via (GenericSemigroupMonoid ExBudget)
     deriving newtype (Pretty, PrettyBy config, NFData)

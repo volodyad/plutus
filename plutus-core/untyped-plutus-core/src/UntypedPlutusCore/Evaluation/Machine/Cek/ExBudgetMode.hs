@@ -106,44 +106,37 @@ instance Pretty RestrictingSt where
 
 -- | For execution, to avoid overruns.
 restricting :: forall uni fun . (PrettyUni uni fun) => ExRestrictingBudget -> ExBudgetMode RestrictingSt uni fun
-restricting (ExRestrictingBudget (ExBudget cpuInit memInit)) = ExBudgetMode $ do
+restricting (ExRestrictingBudget (ExBudget cpuInit)) = ExBudgetMode $ do
     -- We keep the counters in a PrimArray. This is better than an STRef since it stores its contents unboxed.
     --
     -- If we don't specify the element type then GHC has difficulty inferring it, but it's
     -- annoying to specify the monad, since it refers to the 's' which is not in scope.
-    ref <- newPrimArray @_ @SatInt 2
+    ref <- newPrimArray @_ @SatInt 1
     let
         cpuIx = 0
-        memIx = 1
         readCpu = coerce <$> readPrimArray ref cpuIx
         writeCpu cpu = writePrimArray ref cpuIx $ coerce cpu
-        readMem = coerce <$> readPrimArray ref memIx
-        writeMem mem = writePrimArray ref memIx $ coerce mem
 
     writeCpu cpuInit
-    writeMem memInit
     let
-        spend _ (ExBudget cpuToSpend memToSpend) = do
+        spend _ (ExBudget cpuToSpend) = do
             cpuLeft <- readCpu
-            memLeft <- readMem
             let cpuLeft' = cpuLeft - cpuToSpend
-            let memLeft' = memLeft - memToSpend
             -- Note that even if we throw an out-of-budget error, we still need to record
             -- what the final state was.
             writeCpu cpuLeft'
-            writeMem memLeft'
-            when (cpuLeft' < 0 || memLeft' < 0) $
+            when (cpuLeft' < 0) $
                 throwingWithCauseExc @(CekEvaluationException uni fun) _EvaluationError
-                    (UserEvaluationError $ CekOutOfExError $ ExRestrictingBudget $ ExBudget cpuLeft' memLeft')
+                    (UserEvaluationError $ CekOutOfExError $ ExRestrictingBudget $ ExBudget cpuLeft')
                     Nothing
     pure . ExBudgetInfo (CekBudgetSpender spend) $ do
-        finalExBudget <- ExBudget <$> readCpu <*> readMem
+        finalExBudget <- ExBudget <$> readCpu
         pure . RestrictingSt $ ExRestrictingBudget finalExBudget
 
 -- | When we want to just evaluate the program we use the 'Restricting' mode with an enormous
 -- budget, so that evaluation costs of on-chain budgeting are reflected accurately in benchmarks.
 enormousBudget :: ExRestrictingBudget
-enormousBudget = ExRestrictingBudget $ ExBudget (ExCPU maxInt) (ExMemory maxInt)
+enormousBudget = ExRestrictingBudget $ ExBudget maxInt
                  where maxInt = fromIntegral (maxBound::Int)
 
 -- | 'restricting' instantiated at 'enormousBudget'.

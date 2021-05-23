@@ -45,8 +45,7 @@ defaultBuiltinCostModel =
 
 -- | Default costs for CEK machine instructions.
 defaultCekMachineCosts :: CekMachineCosts
-defaultCekMachineCosts =
-  $$(readJSONFromFile "cost-model/data/cekMachineCosts.json")
+defaultCekMachineCosts = CekMachineCosts  50000000 70000 70000 70000 70000 70000 70000 70000
 
 defaultCekCostModel :: CostModel CekMachineCosts
 defaultCekCostModel = CostModel defaultCekMachineCosts defaultBuiltinCostModel

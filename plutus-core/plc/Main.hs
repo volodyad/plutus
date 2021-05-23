@@ -215,8 +215,8 @@ exbudgetReader = do
   s <- str
   case splitOn ":" s of
     [a,b] -> case (readMaybe a, readMaybe b) of
-               (Just cpu, Just mem) -> pure $ ExBudget (ExCPU cpu) (ExMemory mem)
-               _                    -> readerError badfmt
+               (Just cpu, Just (_mem :: Int)) -> pure $ ExBudget cpu
+               _                              -> readerError badfmt
     _     -> readerError badfmt
     where badfmt = "Invalid budget (expected eg 10000:50000)"
 
@@ -754,11 +754,8 @@ printBudgetStateBudget :: UPLC.Term UPLC.Name PLC.DefaultUni PLC.DefaultFun () -
 printBudgetStateBudget _ model b =
     case model of
       Unit -> pure ()
-      _ ->  let ExCPU cpu = _exBudgetCPU b
-                ExMemory mem = _exBudgetMemory b
-            in do
-              putStrLn $ "CPU budget:    " ++ show cpu
-              putStrLn $ "Memory budget: " ++ show mem
+      _ ->  do
+              putStrLn $ "CPU budget:    " ++ show b
 
 printBudgetStateTally :: (Eq fun, Cek.Hashable fun, Show fun)
        => UPLC.Term UPLC.Name PLC.DefaultUni PLC.DefaultFun () -> CekModel ->  Cek.CekExTally fun -> IO ()
@@ -785,23 +782,23 @@ printBudgetStateTally term model (Cek.CekExTally costs) = do
           traverse_ (\(b,cost) -> putStrLn $ printf "%-20s %s" (show b) (budgetToString cost :: String)) builtinsAndCosts
           putStrLn ""
           putStrLn $ "Total budget spent: " ++ printf (budgetToString totalCost)
-          putStrLn $ "Predicted execution time: " ++ (formatTime_picoseconds totalTime)
+--          putStrLn $ "Predicted execution time: " ++ (formatTime_picoseconds totalTime)
     Unit -> pure ()
   where
         getSpent k =
             case H.lookup k costs of
               Just v  -> v
-              Nothing -> ExBudget 0 0
+              Nothing -> ExBudget 0
         allNodeTags = [Cek.BConst, Cek.BVar, Cek.BLamAbs, Cek.BApply, Cek.BDelay, Cek.BForce, Cek.BError, Cek.BBuiltin]
         totalComputeCost = mconcat $ map getSpent allNodeTags  -- For unitCekCosts this will be the total number of compute steps
-        budgetToString (ExBudget (ExCPU cpu) (ExMemory mem)) =
-            printf "%15s  %15s" (show cpu) (show mem) :: String -- Not %d: doesn't work when CostingInteger is SatInt.
+        budgetToString (ExBudget cpu) =
+            printf "%15s" (show cpu) :: String -- Not %d: doesn't work when CostingInteger is SatInt.
         pbudget = budgetToString . getSpent
         f l e = case e of {(Cek.BBuiltinApp b, cost)  -> (b,cost):l; _ -> l}
         builtinsAndCosts = List.foldl f [] (H.toList costs)
         builtinCosts = mconcat (map snd builtinsAndCosts)
         -- ^ Total builtin evaluation time (according to the models) in picoseconds (units depend on BuiltinCostModel.costMultiplier)
-        getCPU b = let ExCPU b' = _exBudgetCPU b in fromIntegral b'::Double
+        getCPU b = b
         totalCost = getSpent Cek.BStartup <> totalComputeCost <> builtinCosts
         totalTime = (getCPU $ getSpent Cek.BStartup) + getCPU totalComputeCost + getCPU builtinCosts
 
