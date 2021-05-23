@@ -26,7 +26,6 @@ import           PlutusPrelude
 import           UntypedPlutusCore.Evaluation.Machine.Cek.Internal
 
 import           PlutusCore.Evaluation.Machine.ExBudget
-import           PlutusCore.Evaluation.Machine.ExMemory            (ExCPU (..), ExMemory (..))
 import           PlutusCore.Evaluation.Machine.Exception
 
 import           Control.Lens                                      (ifoldMap)

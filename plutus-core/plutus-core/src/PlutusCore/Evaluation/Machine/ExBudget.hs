@@ -145,10 +145,11 @@ where
 
 import           PlutusPrelude                          hiding (toList)
 
+import           Control.Monad.RWS.Strict
 import           PlutusCore.Core
 import           PlutusCore.Name
 
-import           Data.Semigroup.Generic
+import           Data.SatInt                            ()
 import           Data.Text.Prettyprint.Doc
 import           Deriving.Aeson
 import           Language.Haskell.TH.Lift               (Lift)
@@ -177,10 +178,10 @@ instance ExBudgetBuiltin fun () where
     exBudgetBuiltin _ = ()
 
 newtype ExBudget = ExBudget CostingInteger
-    deriving stock (Eq, Show, Generic, Lift)
-    deriving anyclass (PrettyBy config, NFData)
+    deriving  (Eq, Show, Generic, Lift)
+    deriving newtype (Num, NFData)
+    deriving anyclass (PrettyBy config)
     deriving (FromJSON, ToJSON) via CustomJSON '[FieldLabelModifier (CamelToSnake)] ExBudget
-    deriving Num via CostingInteger
     deriving (Semigroup, Monoid) via (Sum CostingInteger)
 
 
