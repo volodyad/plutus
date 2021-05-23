@@ -131,7 +131,7 @@ restricting (ExRestrictingBudget (ExBudget cpuInit memInit)) = ExBudgetMode $ do
             writeCpu cpuLeft'
             when (cpuLeft' < 0) $
                 throwingWithCauseExc @(CekEvaluationException uni fun) _EvaluationError
-                    (UserEvaluationError $ CekOutOfExError $ ExRestrictingBudget $ ExBudget cpuLeft' memLeft')
+                    (UserEvaluationError $ CekOutOfExError $ ExRestrictingBudget $ ExBudget cpuLeft' 0)
                     Nothing
     pure . ExBudgetInfo (CekBudgetSpender spend) $ do
         finalExBudget <- ExBudget <$> readCpu <*> readMem
