@@ -125,13 +125,10 @@ restricting (ExRestrictingBudget (ExBudget cpuInit memInit)) = ExBudgetMode $ do
     let
         spend _ (ExBudget cpuToSpend memToSpend) = do
             cpuLeft <- readCpu
-            memLeft <- readMem
             let cpuLeft' = cpuLeft - cpuToSpend
-            let memLeft' = memLeft - memToSpend
             -- Note that even if we throw an out-of-budget error, we still need to record
             -- what the final state was.
             writeCpu cpuLeft'
-            writeMem memLeft'
             when (cpuLeft' < 0) $
                 throwingWithCauseExc @(CekEvaluationException uni fun) _EvaluationError
                     (UserEvaluationError $ CekOutOfExError $ ExRestrictingBudget $ ExBudget cpuLeft' memLeft')
