@@ -28,6 +28,7 @@ import           Data.Either
 import           Data.Hashable                           (Hashable)
 import qualified Data.Kind                               as GHC (Type)
 import           Data.Proxy
+import           Data.SatInt
 import           Data.Text.Prettyprint.Doc
 import           Data.Void
 import           GHC.Generics
@@ -36,6 +37,11 @@ import           GHC.Ix
 instance (Bounded a, Bounded b) => Bounded (Either a b) where
     minBound = Left  minBound
     maxBound = Right maxBound
+
+instance Semigroup SatInt
+    where (<>) = (+)
+instance Monoid SatInt where
+    mempty = 0
 
 size :: forall a. (Bounded a, Enum a) => Int
 size = fromEnum (maxBound :: a) - fromEnum (minBound :: a) + 1
@@ -154,23 +160,23 @@ instance (GShow uni, GEq uni, uni `Includes` Integer) => ToBuiltinMeaning uni Ex
     toBuiltinMeaning Const =
         makeBuiltinMeaning
             const
-            (\_ _ _ -> ExBudget 1)
+            (\_ _ _ ->  1)
     toBuiltinMeaning Id =
         makeBuiltinMeaning
             Prelude.id
-            (\_ _ -> ExBudget 1)
+            (\_ _ ->  1)
     toBuiltinMeaning IdFInteger =
         makeBuiltinMeaning
             (Prelude.id
                 :: a ~ Opaque term (TyAppRep (TyVarRep ('TyNameRep "f" 0)) Integer)
                 => a -> a)
-            (\_ _ -> ExBudget 1)
+            (\_ _ ->  1)
     toBuiltinMeaning IdList =
         makeBuiltinMeaning
             (Prelude.id
                 :: a ~ Opaque term (ListRep (TyVarRep ('TyNameRep "a" 0)))
                 => a -> a)
-            (\_ _ -> ExBudget 1)
+            (\_ _ ->  1)
     toBuiltinMeaning IdRank2 =
         makeBuiltinMeaning
             (Prelude.id
@@ -179,10 +185,10 @@ instance (GShow uni, GEq uni, uni `Includes` Integer) => ToBuiltinMeaning uni Ex
                    , afa ~ Opaque term (TyForallRep a (TyAppRep (TyVarRep f) (TyVarRep a)))
                    )
                 => afa -> afa)
-            (\_ _ -> ExBudget 1)
+            (\_ _ ->  1)
     toBuiltinMeaning Absurd =
         makeBuiltinMeaning
             (absurd
                 :: a ~ Opaque term (TyVarRep ('TyNameRep "a" 0))
                 => Void -> a)
-            (\_ _ -> ExBudget 1)
+            (\_ _ ->  1)

@@ -177,17 +177,13 @@ class ExBudgetBuiltin fun exBudgetCat where
 instance ExBudgetBuiltin fun () where
     exBudgetBuiltin _ = ()
 
-newtype ExBudget = ExBudget CostingInteger
-    deriving  (Eq, Show, Generic, Lift)
-    deriving newtype (Num, NFData)
-    deriving anyclass (PrettyBy config)
-    deriving (FromJSON, ToJSON) via CustomJSON '[FieldLabelModifier (CamelToSnake)] ExBudget
-    deriving (Semigroup, Monoid) via (Sum CostingInteger)
-
+type ExBudget = CostingInteger
 
 instance Pretty ExBudget where
-    pretty (ExBudget _cpu) = parens $ fold
-        [ "{ cpu: ",  "}" ]
+    pretty (cpu) = "cpu"
+
+instance PrettyBy config ExBudget
+    where prettyBy _ _ = "*"
 
 newtype ExRestrictingBudget = ExRestrictingBudget ExBudget deriving (Show, Eq)
     deriving newtype (Pretty, PrettyBy config, NFData)

@@ -214,27 +214,27 @@ instance (GShow uni, GEq uni, DefaultUni <: uni) => ToBuiltinMeaning uni Default
     toBuiltinMeaning CharToString =
         makeBuiltinMeaning
             (pure :: Char -> String)
-            mempty  -- TODO: budget.
+            (runCostingFunOneArgument . paramSHA2)
     toBuiltinMeaning Append =
         makeBuiltinMeaning
             ((++) :: String -> String -> String)
-            mempty  -- TODO: budget.
+            (runCostingFunTwoArguments . paramGtByteString)
     toBuiltinMeaning Trace =
         makeBuiltinMeaning
             (emit :: String -> Emitter ())
-            mempty  -- TODO: budget.
+            (runCostingFunOneArgument . paramSHA2)
     toBuiltinMeaning Nop1 =
         makeBuiltinMeaning
             (\(_::Integer) -> ())
-            mempty
+            undefined
     toBuiltinMeaning Nop2 =
         makeBuiltinMeaning
             (\(_::Integer) (_::Integer) -> ())
-            mempty
+            undefined
     toBuiltinMeaning Nop3 =
         makeBuiltinMeaning
             (\(_::Integer) (_::Integer) (_::Integer) -> ())
-            mempty
+            undefined
 
 -- See Note [Stable encoding of PLC]
 instance Serialise DefaultFun where

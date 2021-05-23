@@ -70,6 +70,12 @@ newtype CekExTally fun = CekExTally (MonoidalHashMap (ExBudgetCategory fun) ExBu
     deriving anyclass (NFData)
     deriving (PrettyBy config) via (IgnorePrettyConfig (CekExTally fun))
 
+
+instance Semigroup SatInt
+    where (<>) = (+)
+instance Monoid SatInt where
+    mempty = 0
+
 instance (Show fun, Ord fun) => Pretty (CekExTally fun) where
     pretty (CekExTally m) =
         let om = Map.fromList $ HashMap.toList m
@@ -105,7 +111,7 @@ instance Pretty RestrictingSt where
 
 -- | For execution, to avoid overruns.
 restricting :: forall uni fun . (PrettyUni uni fun) => ExRestrictingBudget -> ExBudgetMode RestrictingSt uni fun
-restricting (ExRestrictingBudget (ExBudget cpuInit)) = ExBudgetMode $ do
+restricting (ExRestrictingBudget (cpuInit)) = ExBudgetMode $ do
     -- We keep the counters in a PrimArray. This is better than an STRef since it stores its contents unboxed.
     --
     -- If we don't specify the element type then GHC has difficulty inferring it, but it's
@@ -118,7 +124,7 @@ restricting (ExRestrictingBudget (ExBudget cpuInit)) = ExBudgetMode $ do
 
     writeCpu cpuInit
     let
-        spend _ (ExBudget cpuToSpend) = do
+        spend _ (cpuToSpend) = do
             cpuLeft <- readCpu
             let cpuLeft' = cpuLeft - cpuToSpend
             -- Note that even if we throw an out-of-budget error, we still need to record
@@ -126,16 +132,16 @@ restricting (ExRestrictingBudget (ExBudget cpuInit)) = ExBudgetMode $ do
             writeCpu cpuLeft'
             when (cpuLeft' < 0) $
                 throwingWithCauseExc @(CekEvaluationException uni fun) _EvaluationError
-                    (UserEvaluationError $ CekOutOfExError $ ExRestrictingBudget $ ExBudget cpuLeft')
+                    (UserEvaluationError $ CekOutOfExError $ ExRestrictingBudget $  cpuLeft')
                     Nothing
     pure . ExBudgetInfo (CekBudgetSpender spend) $ do
-        finalExBudget <- ExBudget <$> readCpu
+        finalExBudget <- readCpu
         pure . RestrictingSt $ ExRestrictingBudget finalExBudget
 
 -- | When we want to just evaluate the program we use the 'Restricting' mode with an enormous
 -- budget, so that evaluation costs of on-chain budgeting are reflected accurately in benchmarks.
 enormousBudget :: ExRestrictingBudget
-enormousBudget = ExRestrictingBudget $ ExBudget maxInt
+enormousBudget = ExRestrictingBudget $ maxInt
                  where maxInt = fromIntegral (maxBound::Int)
 
 -- | 'restricting' instantiated at 'enormousBudget'.

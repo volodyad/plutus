@@ -114,7 +114,7 @@ instance Default ModelOneArgument where
 runCostingFunOneArgument :: CostingFun ModelOneArgument -> ExMemory -> ExBudget
 runCostingFunOneArgument
     (CostingFun cpu) mem1 =
-        ExBudget (runOneArgumentModel cpu mem1)
+        (runOneArgumentModel cpu mem1)
 
 runOneArgumentModel :: ModelOneArgument -> ExMemory -> CostingInteger
 runOneArgumentModel (ModelOneArgumentConstantCost c) _ = c
@@ -203,7 +203,7 @@ instance Default ModelTwoArguments where
 
 runCostingFunTwoArguments :: CostingFun ModelTwoArguments -> ExMemory -> ExMemory -> ExBudget
 runCostingFunTwoArguments (CostingFun cpu) mem1 mem2 =
-    ExBudget (runTwoArgumentModel cpu mem1 mem2)
+     (runTwoArgumentModel cpu mem1 mem2)
 
 runTwoArgumentModel :: ModelTwoArguments -> ExMemory -> ExMemory -> CostingInteger
 runTwoArgumentModel
@@ -251,4 +251,4 @@ runThreeArgumentModel (ModelThreeArgumentsAddedSizes (ModelAddedSizes intercept 
 
 runCostingFunThreeArguments :: CostingFun ModelThreeArguments -> ExMemory -> ExMemory -> ExMemory -> ExBudget
 runCostingFunThreeArguments (CostingFun cpu) mem1 mem2 mem3 =
-    ExBudget (runThreeArgumentModel cpu mem1 mem2 mem3)
+    (runThreeArgumentModel cpu mem1 mem2 mem3)
