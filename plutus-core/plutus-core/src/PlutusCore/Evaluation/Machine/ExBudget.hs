@@ -148,6 +148,7 @@ import           PlutusPrelude                          hiding (toList)
 import           PlutusCore.Core
 import           PlutusCore.Name
 
+import           Data.Semigroup.Generic
 import           Data.Text.Prettyprint.Doc
 import           Deriving.Aeson
 import           Language.Haskell.TH.Lift               (Lift)
@@ -180,10 +181,7 @@ newtype ExBudget = ExBudget CostingInteger
     deriving anyclass (PrettyBy config, NFData)
     deriving (FromJSON, ToJSON) via CustomJSON '[FieldLabelModifier (CamelToSnake)] ExBudget
     deriving Num via CostingInteger
-instance Semigroup ExBudget where
-    (<>) = (+)
-instance Monoid ExBudget where
-    mempty = ExBudget 0
+    deriving (Semigroup, Monoid) via (Sum CostingInteger)
 
 
 instance Pretty ExBudget where
