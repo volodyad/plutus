@@ -58,6 +58,7 @@ import           Control.Monad                    (guard)
 import           Data.Aeson                       (FromJSON, FromJSONKey, ToJSON, ToJSONKey, (.:))
 import qualified Data.Aeson                       as JSON
 import qualified Data.Aeson.Extras                as JSON
+import qualified Data.ByteString                  as BS
 import           Data.Hashable                    (Hashable)
 import qualified Data.List                        (sortBy)
 import           Data.String                      (IsString (fromString))
@@ -79,7 +80,7 @@ import qualified PlutusTx.Ord                     as Ord
 import           PlutusTx.Prelude
 import           PlutusTx.These
 
-newtype CurrencySymbol = CurrencySymbol { unCurrencySymbol :: Builtins.ByteString }
+newtype CurrencySymbol = CurrencySymbol { unCurrencySymbol :: BS.ByteString }
     deriving (IsString, Haskell.Show, Serialise, Pretty) via LedgerBytes
     deriving stock (Generic)
     deriving newtype (Haskell.Eq, Haskell.Ord, Eq, Ord, PlutusTx.IsData)
@@ -115,11 +116,11 @@ currencyMPSHash :: CurrencySymbol -> MonetaryPolicyHash
 currencyMPSHash (CurrencySymbol h) = MonetaryPolicyHash h
 
 {-# INLINABLE currencySymbol #-}
-currencySymbol :: ByteString -> CurrencySymbol
+currencySymbol :: BS.ByteString -> CurrencySymbol
 currencySymbol = CurrencySymbol
 
 -- | ByteString of a name of a token, shown as UTF-8 string when possible
-newtype TokenName = TokenName { unTokenName :: Builtins.ByteString }
+newtype TokenName = TokenName { unTokenName :: BS.ByteString }
     deriving (Serialise) via LedgerBytes
     deriving stock (Generic)
     deriving newtype (Haskell.Eq, Haskell.Ord, Eq, Ord, PlutusTx.IsData)
@@ -132,10 +133,10 @@ instance IsString TokenName where
 fromText :: Text -> TokenName
 fromText = TokenName . E.encodeUtf8
 
-fromTokenName :: (Builtins.ByteString -> r) -> (Text -> r) -> TokenName -> r
+fromTokenName :: (BS.ByteString -> r) -> (Text -> r) -> TokenName -> r
 fromTokenName handleBytestring handleText (TokenName bs) = either (\_ -> handleBytestring bs) handleText $ E.decodeUtf8' bs
 
-asBase16 :: Builtins.ByteString -> Text
+asBase16 :: BS.ByteString -> Text
 asBase16 bs = Text.concat ["0x", JSON.encodeByteString bs]
 
 quoted :: Text -> Text
@@ -176,7 +177,7 @@ instance FromJSON TokenName where
 makeLift ''TokenName
 
 {-# INLINABLE tokenName #-}
-tokenName :: ByteString -> TokenName
+tokenName :: BS.ByteString -> TokenName
 tokenName = TokenName
 
 -- | An asset class, identified by currency symbol and token name.

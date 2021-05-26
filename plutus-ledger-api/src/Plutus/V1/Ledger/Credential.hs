@@ -21,6 +21,7 @@ module Plutus.V1.Ledger.Credential(
 import           Codec.Serialise.Class     (Serialise)
 import           Control.DeepSeq           (NFData)
 import           Data.Aeson                (FromJSON, ToJSON)
+import qualified Data.ByteString           as BS
 import           Data.Hashable             (Hashable)
 import           Data.Text.Prettyprint.Doc (Pretty (..), (<+>))
 import           GHC.Generics              (Generic)
@@ -34,7 +35,7 @@ import qualified PlutusTx.Eq               as PlutusTx
 
 -- | Staking credential used to assign rewards
 data StakingCredential
-    = StakingHash Builtins.ByteString
+    = StakingHash BS.ByteString
     | StakingPtr Integer Integer Integer -- NB: The fields should really be Word64 / Natural / Natural, but 'Integer' is our only integral type so we need to use it instead.
     deriving stock (Eq, Ord, Show, Generic)
     deriving anyclass (ToJSON, FromJSON, Serialise, Hashable, NFData)

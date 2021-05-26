@@ -63,6 +63,8 @@ import           Data.Aeson                       (FromJSON, FromJSONKey, ToJSON
 import qualified Data.Aeson                       as JSON
 import qualified Data.Aeson.Extras                as JSON
 import qualified Data.ByteArray                   as BA
+import qualified Data.ByteString                  as BS
+import qualified Data.ByteString.Hash             as Hash
 import qualified Data.ByteString.Lazy             as BSL
 import           Data.Hashable                    (Hashable)
 import           Data.String
@@ -276,7 +278,7 @@ instance BA.ByteArrayAccess MonetaryPolicy where
 
 -- | Script runtime representation of a @Digest SHA256@.
 newtype ValidatorHash =
-    ValidatorHash Builtins.ByteString
+    ValidatorHash BS.ByteString
     deriving (IsString, Haskell.Show, Serialise, Pretty) via LedgerBytes
     deriving stock (Generic)
     deriving newtype (Haskell.Eq, Haskell.Ord, Eq, Ord, Hashable, IsData)
@@ -284,7 +286,7 @@ newtype ValidatorHash =
 
 -- | Script runtime representation of a @Digest SHA256@.
 newtype DatumHash =
-    DatumHash Builtins.ByteString
+    DatumHash BS.ByteString
     deriving (IsString, Haskell.Show, Serialise, Pretty) via LedgerBytes
     deriving stock (Generic)
     deriving newtype (Haskell.Eq, Haskell.Ord, Eq, Ord, Hashable, IsData, NFData)
@@ -292,7 +294,7 @@ newtype DatumHash =
 
 -- | Script runtime representation of a @Digest SHA256@.
 newtype RedeemerHash =
-    RedeemerHash Builtins.ByteString
+    RedeemerHash BS.ByteString
     deriving (IsString, Haskell.Show, Serialise, Pretty) via LedgerBytes
     deriving stock (Generic)
     deriving newtype (Haskell.Eq, Haskell.Ord, Eq, Ord, Hashable, IsData)
@@ -300,17 +302,17 @@ newtype RedeemerHash =
 
 -- | Script runtime representation of a @Digest SHA256@.
 newtype MonetaryPolicyHash =
-    MonetaryPolicyHash Builtins.ByteString
+    MonetaryPolicyHash BS.ByteString
     deriving (IsString, Haskell.Show, Serialise, Pretty) via LedgerBytes
     deriving stock (Generic)
     deriving newtype (Haskell.Eq, Haskell.Ord, Eq, Ord, Hashable, IsData)
     deriving anyclass (FromJSON, ToJSON, ToJSONKey, FromJSONKey)
 
 datumHash :: Datum -> DatumHash
-datumHash = DatumHash . Builtins.sha2_256 . BA.convert
+datumHash = DatumHash . Hash.sha2 . BA.convert
 
 redeemerHash :: Redeemer -> RedeemerHash
-redeemerHash = RedeemerHash . Builtins.sha2_256 . BA.convert
+redeemerHash = RedeemerHash . Hash.sha2 . BA.convert
 
 validatorHash :: Validator -> ValidatorHash
 validatorHash vl = ValidatorHash $ BA.convert h' where

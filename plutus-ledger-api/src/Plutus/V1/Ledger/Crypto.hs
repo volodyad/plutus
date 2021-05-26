@@ -43,6 +43,7 @@ import qualified Data.Aeson                as JSON
 import qualified Data.Aeson.Extras         as JSON
 import qualified Data.ByteArray            as BA
 import qualified Data.ByteString           as BS
+import qualified Data.ByteString.Hash      as Hash
 import           Data.Either.Extras        (unsafeFromEither)
 import           Data.Hashable             (Hashable)
 import           Data.String
@@ -87,7 +88,7 @@ pubKeyHash :: PubKey -> PubKeyHash
 pubKeyHash (PubKey (LedgerBytes bs)) =
     -- this needs to be usable in on-chain code as well, so we have to
     -- INLINABLE & use the hash function from Builtins
-    PubKeyHash (Builtins.sha2_256 bs)
+    PubKeyHash (Hash.sha2 bs)
 
 -- | A cryptographic private key.
 newtype PrivateKey = PrivateKey { getPrivateKey :: LedgerBytes }
@@ -99,7 +100,7 @@ newtype PrivateKey = PrivateKey { getPrivateKey :: LedgerBytes }
 makeLift ''PrivateKey
 
 -- | A message with a cryptographic signature.
-newtype Signature = Signature { getSignature :: Builtins.ByteString }
+newtype Signature = Signature { getSignature :: BS.ByteString }
     deriving stock (Eq, Ord, Generic)
     deriving newtype (P.Eq, P.Ord, Serialise, PlutusTx.IsData, NFData)
     deriving (Show, Pretty) via LedgerBytes

@@ -45,13 +45,12 @@ primitives = testNested "Primitives" [
   , goldenPir "ifThenElse" ifThenElse
   , goldenUEval "ifThenElseApply" [ toUPlc ifThenElse, toUPlc int, toUPlc int2 ]
   , goldenPir "emptyByteString" emptyByteString
-  , goldenUEval "emptyByteStringApply" [ getPlc emptyByteString, liftProgram Builtins.emptyByteString ]
+  , goldenUEval "emptyByteStringApply" [ getPlc emptyByteString, liftProgram ("" :: String) ]
+  , goldenPir "sha2_256" sha2
   , goldenPir "bytestring" bytestring
-  , goldenUEval "bytestringApply" [ getPlc bytestring, liftProgram ("hello"::Builtins.ByteString) ]
-  , goldenUEval "sha2_256" [ getPlc sha2, liftProgram ("hello" :: Builtins.ByteString)]
-  , goldenUEval "equalsByteString" [ getPlc bsEquals, liftProgram ("hello" :: Builtins.ByteString), liftProgram ("hello" :: Builtins.ByteString)]
-  , goldenUEval "ltByteString" [ getPlc bsLt, liftProgram ("hello" :: Builtins.ByteString), liftProgram ("world" :: Builtins.ByteString)]
-  , goldenUEval "decodeUtf8" [ getPlc bsDecode, liftProgram ("hello" :: Builtins.ByteString)]
+  , goldenPir "equalsByteString" bsEquals
+  , goldenPir "ltByteString" bsLt
+  , goldenPir "decodeUtf8" bsDecode
   , goldenPir "verify" verify
   , goldenPir "trace" trace
   , goldenPir "stringLiteral" stringLiteral
@@ -106,23 +105,23 @@ errorPlc = plc (Proxy @"errorPlc") (Builtins.error @Integer)
 ifThenElse :: CompiledCode (Integer -> Integer -> Integer)
 ifThenElse = plc (Proxy @"ifThenElse") (\(x::Integer) (y::Integer) -> if Builtins.equalsInteger x y then x else y)
 
-emptyByteString :: CompiledCode (Builtins.ByteString -> Builtins.ByteString)
-emptyByteString = plc (Proxy @"emptyByteString") (\(x :: Builtins.ByteString) -> x)
+emptyByteString :: CompiledCode (String -> Builtins.ByteString)
+emptyByteString = plc (Proxy @"emptyByteString") (\(x :: String) -> Builtins.encodeUtf8 (P.stringToBuiltinString x))
 
 bytestring :: CompiledCode (Builtins.ByteString -> Builtins.ByteString)
 bytestring = plc (Proxy @"bytestring") (\(x::Builtins.ByteString) -> x)
 
-sha2 :: CompiledCode (Builtins.ByteString -> Builtins.ByteString)
-sha2 = plc (Proxy @"sha2") (\(x :: Builtins.ByteString) -> Builtins.sha2_256 x)
+sha2 :: CompiledCode Builtins.ByteString
+sha2 = plc (Proxy @"sha2") (Builtins.sha2_256 "hello")
 
-bsEquals :: CompiledCode (Builtins.ByteString -> Builtins.ByteString -> Bool)
-bsEquals = plc (Proxy @"bs32Equals") (\(x :: Builtins.ByteString) (y :: Builtins.ByteString) -> Builtins.equalsByteString x y)
+bsEquals :: CompiledCode Bool
+bsEquals = plc (Proxy @"bs32Equals") (Builtins.equalsByteString ("hello" :: Builtins.ByteString) ("hello" :: Builtins.ByteString))
 
-bsLt :: CompiledCode (Builtins.ByteString -> Builtins.ByteString -> Bool)
-bsLt = plc (Proxy @"bsLt") (\(x :: Builtins.ByteString) (y :: Builtins.ByteString) -> Builtins.lessThanByteString x y)
+bsLt :: CompiledCode Bool
+bsLt = plc (Proxy @"bsLt") (Builtins.lessThanByteString ("hello" :: Builtins.ByteString) ("world" :: Builtins.ByteString))
 
-bsDecode :: CompiledCode (Builtins.ByteString -> Builtins.String)
-bsDecode = plc (Proxy @"bsDecode") (\(x :: Builtins.ByteString) -> Builtins.decodeUtf8 x)
+bsDecode :: CompiledCode Builtins.String
+bsDecode = plc (Proxy @"bsDecode") (Builtins.decodeUtf8 ("hello" :: Builtins.ByteString))
 
 verify :: CompiledCode (Builtins.ByteString -> Builtins.ByteString -> Builtins.ByteString -> Bool)
 verify = plc (Proxy @"verify") (\(x::Builtins.ByteString) (y::Builtins.ByteString) (z::Builtins.ByteString) -> Builtins.verifySignature x y z)
