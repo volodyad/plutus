@@ -26,6 +26,7 @@ import Foreign.Object as FO
 import PlutusTx.AssocMap as AssocMap
 import Plutus.V1.Ledger.Interval (Extended(..), Interval(..), LowerBound(..), UpperBound(..))
 import Plutus.V1.Ledger.Slot (Slot)
+import Plutus.V1.Ledger.Time (POSIXTime)
 import Plutus.V1.Ledger.Value (CurrencySymbol(..), Value(..))
 import Matryoshka (Algebra, ana, cata)
 import Playground.Lenses (_recipient, _amount)
@@ -63,6 +64,7 @@ data FieldEvent
   | SetRadioField String
   | SetValueField ValueEvent
   | SetSlotRangeField (Interval Slot)
+  | SetPOSIXTimeRangeField (Interval POSIXTime)
 
 derive instance genericFieldEvent :: Generic FieldEvent _
 
@@ -120,6 +122,8 @@ toArgument initialValue = ana algebra
 
   algebra FormSchemaSlotRange = FormSlotRangeF defaultSlotRange
 
+  algebra FormSchemaPOSIXTimeRange = FormPOSIXTimeRangeF defaultTimeRange
+
   algebra (FormSchemaTuple a b) = FormTupleF a b
 
   algebra (FormSchemaObject xs) = FormObjectF xs
@@ -128,6 +132,13 @@ toArgument initialValue = ana algebra
 
 defaultSlotRange :: Interval Slot
 defaultSlotRange =
+  Interval
+    { ivFrom: LowerBound NegInf true
+    , ivTo: UpperBound PosInf true
+    }
+
+defaultTimeRange :: Interval POSIXTime
+defaultTimeRange =
   Interval
     { ivFrom: LowerBound NegInf true
     , ivTo: UpperBound PosInf true
@@ -174,6 +185,8 @@ formArgumentToJson = cata algebra
 
   algebra (FormSlotRangeF x) = Just $ encode x
 
+  algebra (FormPOSIXTimeRangeF x) = Just $ encode x
+
   algebra (FormUnsupportedF _) = Nothing
 
 mkInitialValue :: Array KnownCurrency -> BigInteger -> Value
@@ -217,6 +230,8 @@ handleFormEvent initialValue event = cata (Fix <<< algebra event)
   algebra (SetField (SetValueField valueEvent)) (FormValueF value) = FormValueF $ handleValueEvent valueEvent value
 
   algebra (SetField (SetSlotRangeField newInterval)) arg@(FormSlotRangeF _) = FormSlotRangeF newInterval
+
+  algebra (SetField (SetPOSIXTimeRangeField newInterval)) arg@(FormSlotRangeF _) = FormPOSIXTimeRangeF newInterval
 
   algebra (SetSubField 1 subEvent) (FormTupleF field1 field2) = FormTupleF (handleFormEvent initialValue subEvent field1) field2
 

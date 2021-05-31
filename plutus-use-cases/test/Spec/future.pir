@@ -4355,28 +4355,6 @@
                           )
                           (termbind
                             (strict)
-                            (vardecl from (all a (type) (fun a [Interval a])))
-                            (abs
-                              a
-                              (type)
-                              (lam
-                                s
-                                a
-                                [
-                                  [
-                                    { Interval a }
-                                    [
-                                      [ { LowerBound a } [ { Finite a } s ] ]
-                                      True
-                                    ]
-                                  ]
-                                  [ [ { UpperBound a } { PosInf a } ] True ]
-                                ]
-                              )
-                            )
-                          )
-                          (termbind
-                            (strict)
                             (vardecl
                               greaterThanInteger
                               (fun (con integer) (fun (con integer) Bool))
@@ -5490,7 +5468,18 @@
                                                                                                                     equalsInteger
                                                                                                                     ds
                                                                                                                   ]
-                                                                                                                  ds
+                                                                                                                  [
+                                                                                                                    [
+                                                                                                                      (builtin
+                                                                                                                        addInteger
+                                                                                                                      )
+                                                                                                                      ds
+                                                                                                                    ]
+                                                                                                                    (con
+                                                                                                                      integer
+                                                                                                                        1596059091
+                                                                                                                    )
+                                                                                                                  ]
                                                                                                                 ]
                                                                                                               ]
                                                                                                               (fun Unit [Maybe [[Tuple2 [[TxConstraints Void] Void]] [State FutureState]]])
@@ -5712,11 +5701,52 @@
                                                                                                                                           [
                                                                                                                                             MustValidateIn
                                                                                                                                             [
-                                                                                                                                              {
-                                                                                                                                                from
-                                                                                                                                                (con integer)
-                                                                                                                                              }
-                                                                                                                                              ds
+                                                                                                                                              [
+                                                                                                                                                {
+                                                                                                                                                  Interval
+                                                                                                                                                  (con integer)
+                                                                                                                                                }
+                                                                                                                                                [
+                                                                                                                                                  [
+                                                                                                                                                    {
+                                                                                                                                                      LowerBound
+                                                                                                                                                      (con integer)
+                                                                                                                                                    }
+                                                                                                                                                    [
+                                                                                                                                                      {
+                                                                                                                                                        Finite
+                                                                                                                                                        (con integer)
+                                                                                                                                                      }
+                                                                                                                                                      [
+                                                                                                                                                        [
+                                                                                                                                                          (builtin
+                                                                                                                                                            subtractInteger
+                                                                                                                                                          )
+                                                                                                                                                          ds
+                                                                                                                                                        ]
+                                                                                                                                                        (con
+                                                                                                                                                          integer
+                                                                                                                                                            1596059091
+                                                                                                                                                        )
+                                                                                                                                                      ]
+                                                                                                                                                    ]
+                                                                                                                                                  ]
+                                                                                                                                                  True
+                                                                                                                                                ]
+                                                                                                                                              ]
+                                                                                                                                              [
+                                                                                                                                                [
+                                                                                                                                                  {
+                                                                                                                                                    UpperBound
+                                                                                                                                                    (con integer)
+                                                                                                                                                  }
+                                                                                                                                                  {
+                                                                                                                                                    PosInf
+                                                                                                                                                    (con integer)
+                                                                                                                                                  }
+                                                                                                                                                ]
+                                                                                                                                                True
+                                                                                                                                              ]
                                                                                                                                             ]
                                                                                                                                           ]
                                                                                                                                         ]
@@ -6075,7 +6105,18 @@
                                                                                                                             greaterThanInteger
                                                                                                                             ds
                                                                                                                           ]
-                                                                                                                          ds
+                                                                                                                          [
+                                                                                                                            [
+                                                                                                                              (builtin
+                                                                                                                                addInteger
+                                                                                                                              )
+                                                                                                                              ds
+                                                                                                                            ]
+                                                                                                                            (con
+                                                                                                                              integer
+                                                                                                                                1596059091
+                                                                                                                            )
+                                                                                                                          ]
                                                                                                                         ]
                                                                                                                       ]
                                                                                                                       (fun Unit [Maybe [[Tuple2 [[TxConstraints Void] Void]] [State FutureState]]])

@@ -113,6 +113,8 @@ instance formArgumentValidation :: Validation (Fix FormArgumentF) where
 
     algebra (FormSlotRangeF _) = []
 
+    algebra (FormPOSIXTimeRangeF _) = []
+
     algebra (FormUnsupportedF _) = [ noPath Unsupported ]
 
 ------------------------------------------------------------

@@ -23,6 +23,7 @@ import           Ledger.Crypto           (PrivateKey, PubKey (..))
 import           Ledger.Oracle           (Observation (..), SignedMessage)
 import qualified Ledger.Oracle           as Oracle
 import           Ledger.Slot             (Slot)
+import qualified Ledger.TimeSlot         as TimeSlot
 import           Ledger.Value            (Value, scale)
 
 import           Plutus.Contract.Test
@@ -31,7 +32,7 @@ import           Plutus.Contracts.Future (Future (..), FutureAccounts (..), Futu
 import qualified Plutus.Contracts.Future as F
 import           Plutus.Trace.Emulator   (ContractHandle, EmulatorTrace)
 import qualified Plutus.Trace.Emulator   as Trace
-import qualified PlutusTx                as PlutusTx
+import qualified PlutusTx
 
 tests :: TestTree
 tests =
@@ -46,18 +47,18 @@ tests =
         (void (initContract >> joinFuture))
 
     , checkPredicate "can increase margin"
-        (assertAccountBalance (ftoShort F.testAccounts) (== (Ada.lovelaceValueOf 1936))
-        .&&. assertAccountBalance (ftoLong F.testAccounts) (== (Ada.lovelaceValueOf 2410)))
+        (assertAccountBalance (ftoShort F.testAccounts) (== Ada.lovelaceValueOf 1936)
+        .&&. assertAccountBalance (ftoLong F.testAccounts) (== Ada.lovelaceValueOf 2410))
         increaseMarginTrace
 
     , checkPredicate "can settle early"
-        (assertAccountBalance (ftoShort F.testAccounts) (== (Ada.lovelaceValueOf 0))
-        .&&. assertAccountBalance (ftoLong F.testAccounts) (== (Ada.lovelaceValueOf 4246)))
+        (assertAccountBalance (ftoShort F.testAccounts) (== Ada.lovelaceValueOf 0)
+        .&&. assertAccountBalance (ftoLong F.testAccounts) (== Ada.lovelaceValueOf 4246))
         settleEarlyTrace
 
      , checkPredicate "can pay out"
-        (assertAccountBalance (ftoShort F.testAccounts) (== (Ada.lovelaceValueOf 1936))
-        .&&. assertAccountBalance (ftoLong F.testAccounts) (== (Ada.lovelaceValueOf 2310)))
+        (assertAccountBalance (ftoShort F.testAccounts) (== Ada.lovelaceValueOf 1936)
+        .&&. assertAccountBalance (ftoLong F.testAccounts) (== Ada.lovelaceValueOf 2310))
         payOutTrace
 
     , goldenPir "test/Spec/future.pir" $$(PlutusTx.compile [|| F.futureStateMachine ||])
@@ -72,7 +73,7 @@ setup =
     FutureSetup
         { shortPK = walletPubKey w1
         , longPK = walletPubKey (Wallet 2)
-        , contractStart = 15
+        , contractStart = TimeSlot.slotToPOSIXTime 15
         }
 
 w1 :: Wallet
@@ -85,7 +86,7 @@ w2 = Wallet 2
 --   due at slot #100.
 theFuture :: Future
 theFuture = Future {
-    ftDeliveryDate  = Ledger.Slot 100,
+    ftDeliveryDate  = TimeSlot.slotToPOSIXTime 100,
     ftUnits         = units,
     ftUnitPrice     = forwardPrice,
     ftInitialMargin = Ada.lovelaceValueOf 800,
@@ -140,7 +141,7 @@ payOut :: ContractHandle () FutureSchema FutureError -> EmulatorTrace ()
 payOut hdl = do
     let
         spotPrice = Ada.lovelaceValueOf 1124
-        ov = mkSignedMessage (ftDeliveryDate theFuture) spotPrice
+        ov = mkSignedMessage (TimeSlot.posixTimeToSlot $ ftDeliveryDate theFuture) spotPrice
     Trace.callEndpoint @"settle-future" hdl ov
     void $ Trace.waitNSlots 2
 

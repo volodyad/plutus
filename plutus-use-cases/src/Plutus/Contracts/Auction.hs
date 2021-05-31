@@ -1,15 +1,14 @@
-{-# LANGUAGE DataKinds          #-}
-{-# LANGUAGE DeriveAnyClass     #-}
-{-# LANGUAGE DeriveGeneric      #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE DerivingVia        #-}
-{-# LANGUAGE GADTs              #-}
-{-# LANGUAGE LambdaCase         #-}
-{-# LANGUAGE NamedFieldPuns     #-}
-{-# LANGUAGE NoImplicitPrelude  #-}
-{-# LANGUAGE TemplateHaskell    #-}
-{-# LANGUAGE TypeApplications   #-}
-{-# LANGUAGE TypeOperators      #-}
+{-# LANGUAGE DataKinds         #-}
+{-# LANGUAGE DeriveAnyClass    #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE DerivingVia       #-}
+{-# LANGUAGE GADTs             #-}
+{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE NamedFieldPuns    #-}
+{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TypeApplications  #-}
+{-# LANGUAGE TypeOperators     #-}
 module Plutus.Contracts.Auction(
     AuctionState(..),
     AuctionInput(..),
@@ -28,12 +27,13 @@ import           Data.Aeson                       (FromJSON, ToJSON)
 import           Data.Monoid                      (Last (..))
 import           Data.Semigroup.Generic           (GenericSemigroupMonoid (..))
 import           GHC.Generics                     (Generic)
-import           Ledger                           (Ada, PubKeyHash, Slot, Value)
+import           Ledger                           (Ada, POSIXTime, PubKeyHash, Value)
 import qualified Ledger
 import qualified Ledger.Ada                       as Ada
 import qualified Ledger.Constraints               as Constraints
 import           Ledger.Constraints.TxConstraints (TxConstraints)
 import qualified Ledger.Interval                  as Interval
+import qualified Ledger.TimeSlot                  as TimeSlot
 import qualified Ledger.Typed.Scripts             as Scripts
 import           Ledger.Typed.Tx                  (TypedScriptTxOut (..))
 import           Ledger.Value                     (AssetClass)
@@ -43,7 +43,7 @@ import           Plutus.Contract.StateMachine     (State (..), StateMachine (..)
 import qualified Plutus.Contract.StateMachine     as SM
 import           Plutus.Contract.Util             (loopM)
 import qualified Plutus.Contracts.Currency        as Currency
-import qualified PlutusTx                         as PlutusTx
+import qualified PlutusTx
 import           PlutusTx.Prelude
 import qualified Prelude                          as Haskell
 
@@ -52,7 +52,7 @@ data AuctionParams
     = AuctionParams
         { apOwner   :: PubKeyHash -- ^ Current owner of the asset. This is where the proceeds of the auction will be sent.
         , apAsset   :: Value -- ^ The asset itself. This value is going to be locked by the auction script output.
-        , apEndTime :: Slot -- ^ When the time window for bidding ends.
+        , apEndTime :: POSIXTime -- ^ When the time window for bidding ends.
         }
         deriving stock (Haskell.Eq, Haskell.Show, Generic)
         deriving anyclass (ToJSON, FromJSON)
@@ -122,7 +122,7 @@ auctionTransition AuctionParams{apOwner, apAsset, apEndTime} State{stateData=old
         (Ongoing HighestBid{highestBid, highestBidder}, Bid{newBid, newBidder}) | newBid > highestBid -> -- if the new bid is higher,
             let constraints =
                     Constraints.mustPayToPubKey highestBidder (Ada.toValue highestBid) -- we pay back the previous highest bid
-                    <> Constraints.mustValidateIn (Interval.to apEndTime) -- but only if we haven't gone past 'apEndTime'
+                    <> Constraints.mustValidateIn (Interval.to $ TimeSlot.posixTimeToSlot apEndTime) -- but only if we haven't gone past 'apEndTime'
                 newState =
                     State
                         { stateData = Ongoing HighestBid{highestBid = newBid, highestBidder = newBidder}
@@ -132,7 +132,7 @@ auctionTransition AuctionParams{apOwner, apAsset, apEndTime} State{stateData=old
 
         (Ongoing h@HighestBid{highestBidder, highestBid}, Payout) ->
             let constraints =
-                    Constraints.mustValidateIn (Interval.from (apEndTime + 1)) -- When the auction has ended,
+                    Constraints.mustValidateIn (Interval.from (TimeSlot.posixTimeToSlot $ apEndTime + 1)) -- When the auction has ended,
                     <> Constraints.mustPayToPubKey apOwner (Ada.toValue highestBid) -- the owner receives the payment
                     <> Constraints.mustPayToPubKey highestBidder apAsset -- and the highest bidder the asset
                 newState = State { stateData = Finished h, stateValue = mempty }
@@ -207,13 +207,13 @@ instance SM.AsSMContractError AuctionError where
     _SMContractError = _StateMachineContractError . SM._SMContractError
 
 -- | Client code for the seller
-auctionSeller :: Value -> Slot -> Contract AuctionOutput SellerSchema AuctionError ()
-auctionSeller value slot = do
+auctionSeller :: Value -> POSIXTime -> Contract AuctionOutput SellerSchema AuctionError ()
+auctionSeller value time = do
     threadToken <- mapError ThreadTokenError Currency.createThreadToken
     logInfo $ "Obtained thread token: " <> Haskell.show threadToken
     tell $ threadTokenOut threadToken
     self <- Ledger.pubKeyHash <$> ownPubKey
-    let params       = AuctionParams{apOwner = self, apAsset = value, apEndTime = slot }
+    let params       = AuctionParams{apOwner = self, apAsset = value, apEndTime = time }
         inst         = scriptInstance threadToken params
         client       = machineClient inst threadToken params
 
@@ -222,7 +222,7 @@ auctionSeller value slot = do
             (SM.runInitialise client (initialState self) value)
 
     logInfo $ AuctionStarted params
-    _ <- awaitSlot slot
+    _ <- awaitSlot $ TimeSlot.posixTimeToSlot time
 
     r <- SM.runStep client Payout
     case r of
@@ -267,7 +267,7 @@ waitForChange :: AuctionParams -> StateMachineClient AuctionState AuctionInput -
 waitForChange AuctionParams{apEndTime} client lastHighestBid = do
     s <- currentSlot
     let
-        auctionOver = awaitSlot apEndTime >> pure (AuctionIsOver lastHighestBid)
+        auctionOver = awaitSlot (TimeSlot.posixTimeToSlot apEndTime) >> pure (AuctionIsOver lastHighestBid)
         submitOwnBid = SubmitOwnBid <$> endpoint @"bid"
         otherBid = do
             let address = Scripts.scriptAddress (validatorInstance (SM.scInstance client))
@@ -323,6 +323,6 @@ auctionBuyer currency params = do
         Just s -> loop s
 
         -- If the state can't be found we wait for it to appear.
-        Nothing -> SM.waitForUpdateUntil client (apEndTime params) >>= \case
+        Nothing -> SM.waitForUpdateUntil client (TimeSlot.posixTimeToSlot $ apEndTime params) >>= \case
             WaitingResult (Ongoing s) -> loop s
             _                         -> logWarn CurrentStateNotFound

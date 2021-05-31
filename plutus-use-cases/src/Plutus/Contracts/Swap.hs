@@ -15,17 +15,18 @@ module Plutus.Contracts.Swap(
     swapValidator
     ) where
 
-import           Ledger               (PubKey, PubKeyHash, Slot, Validator)
-import qualified Ledger               as Ledger
+import           Ledger               (POSIXTime, PubKey, PubKeyHash, Validator)
+import qualified Ledger
 import           Ledger.Ada           (Ada)
 import qualified Ledger.Ada           as Ada
 import           Ledger.Contexts      (ScriptContext (..), TxInInfo (..), TxInfo (..), TxOut (..))
 import qualified Ledger.Contexts      as Validation
 import           Ledger.Oracle        (Observation (..), SignedMessage)
 import qualified Ledger.Oracle        as Oracle
+import qualified Ledger.TimeSlot      as TimeSlot
 import qualified Ledger.Typed.Scripts as Scripts
 import           Ledger.Value         (Value)
-import qualified PlutusTx             as PlutusTx
+import qualified PlutusTx
 import           PlutusTx.Prelude
 
 -- | A swap is an agreement to exchange cashflows at future dates. To keep
@@ -40,7 +41,7 @@ import           PlutusTx.Prelude
 --
 data Swap = Swap
     { swapNotionalAmt     :: !Ada
-    , swapObservationTime :: !Slot
+    , swapObservationTime :: !POSIXTime
     , swapFixedRate       :: !Rational -- ^ Interest rate fixed at the beginning of the contract
     , swapFloatingRate    :: !Rational -- ^ Interest rate whose value will be observed (by an oracle) on the day of the payment
     , swapMargin          :: !Ada -- ^ Margin deposited at the beginning of the contract to protect against default (one party failing to pay)
@@ -68,12 +69,12 @@ type SwapOracleMessage = SignedMessage (Observation Rational)
 mkValidator :: Swap -> SwapOwners -> SwapOracleMessage -> ScriptContext -> Bool
 mkValidator Swap{..} SwapOwners{..} redeemer p@ScriptContext{scriptContextTxInfo=txInfo} =
     let
-        extractVerifyAt :: SignedMessage (Observation Rational) -> PubKey -> Slot -> Rational
-        extractVerifyAt sm pk slt =
+        extractVerifyAt :: SignedMessage (Observation Rational) -> PubKey -> POSIXTime -> Rational
+        extractVerifyAt sm pk time =
             case Oracle.verifySignedMessageOnChain p pk sm of
                 Left _ -> trace "checkSignatureAndDecode failed" (error ())
                 Right Observation{obsValue, obsSlot} ->
-                    if obsSlot == slt
+                    if obsSlot == TimeSlot.posixTimeToSlot time
                         then obsValue
                         else trace "wrong slot" (error ())
 
@@ -148,11 +149,11 @@ mkValidator Swap{..} SwapOwners{..} redeemer p@ScriptContext{scriptContextTxInfo
 
         -- True if the output is the payment of the fixed leg.
         ol1 :: TxOut -> Bool
-        ol1 o@(TxOut{txOutValue}) = isPubKeyOutput o swapOwnersFixedLeg && adaValueIn txOutValue <= fixedRemainder
+        ol1 o@TxOut{txOutValue} = isPubKeyOutput o swapOwnersFixedLeg && adaValueIn txOutValue <= fixedRemainder
 
         -- True if the output is the payment of the floating leg.
         ol2 :: TxOut -> Bool
-        ol2 o@(TxOut{txOutValue}) = isPubKeyOutput o swapOwnersFloating && adaValueIn txOutValue <= floatRemainder
+        ol2 o@TxOut{txOutValue} = isPubKeyOutput o swapOwnersFloating && adaValueIn txOutValue <= floatRemainder
 
         -- NOTE: I didn't include a check that the slot is greater
         -- than the observation time. This is because the slot is

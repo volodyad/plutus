@@ -38,10 +38,11 @@ import           Data.Semigroup               (Sum (..))
 import           Data.String                  (fromString)
 import           Data.Text                    (Text)
 import           GHC.Generics                 (Generic)
-import           Ledger                       (MonetaryPolicyHash, PubKeyHash, Slot (..), TokenName)
+import           Ledger                       (MonetaryPolicyHash, POSIXTime, PubKeyHash, TokenName)
 import           Ledger.Constraints           (TxConstraints)
 import qualified Ledger.Constraints           as Constraints
 import qualified Ledger.Interval              as Interval
+import qualified Ledger.TimeSlot              as TimeSlot
 import qualified Ledger.Typed.Scripts         as Scripts
 import qualified Ledger.Value                 as Value
 import           Plutus.Contract
@@ -63,8 +64,8 @@ data Proposal = Proposal
     -- ^ The new contents of the law
     , tokenName      :: TokenName
     -- ^ The name of the voting tokens. Only voting token owners are allowed to propose changes.
-    , votingDeadline :: Slot
-    -- ^ The slot when voting ends and the votes are tallied.
+    , votingDeadline :: POSIXTime
+    -- ^ The time when voting ends and the votes are tallied.
     }
     deriving stock (Haskell.Show, Generic)
     deriving anyclass (ToJSON, FromJSON)
@@ -177,7 +178,7 @@ transition Params{..} State{ stateData = s, stateValue} i = case (s, i) of
     (GovState law mph (Just (Voting p oldMap)), AddVote tokenName vote) ->
         let newMap = AssocMap.insert tokenName vote oldMap
             constraints = ownsVotingToken mph tokenName
-                        <> Constraints.mustValidateIn (Interval.to (votingDeadline p))
+                        <> Constraints.mustValidateIn (Interval.to (TimeSlot.posixTimeToSlot $ votingDeadline p))
         in Just (constraints, State (GovState law mph (Just (Voting p newMap))) stateValue)
 
     (GovState oldLaw mph (Just (Voting p votes)), FinishVoting) ->
@@ -218,7 +219,7 @@ proposalContract params proposal = mapError (review _GovError) propose where
         void $ SM.runStep theClient (ProposeChange proposal)
 
         logInfo @Text "Voting started. Waiting for the voting deadline to count the votes."
-        void $ awaitSlot (votingDeadline proposal)
+        void $ awaitSlot (TimeSlot.posixTimeToSlot $ votingDeadline proposal)
 
         logInfo @Text "Voting finished. Counting the votes."
         void $ SM.runStep theClient FinishVoting

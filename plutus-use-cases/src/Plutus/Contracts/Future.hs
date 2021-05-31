@@ -52,8 +52,8 @@ import qualified Control.Monad.Freer.Error        as Freer
 import           Data.Aeson                       (FromJSON, ToJSON)
 import           Data.Default                     (Default (..))
 import           GHC.Generics                     (Generic)
-import           Ledger                           (Address, Datum (..), PubKey, Slot (..), Validator, ValidatorHash,
-                                                   pubKeyHash)
+import           Ledger                           (Address, Datum (..), POSIXTime, PubKey, Slot (..), Validator,
+                                                   ValidatorHash, pubKeyHash)
 import qualified Ledger
 import qualified Ledger.Constraints               as Constraints
 import           Ledger.Constraints.TxConstraints (TxConstraints)
@@ -61,12 +61,13 @@ import qualified Ledger.Interval                  as Interval
 import           Ledger.Oracle                    (Observation (..), SignedMessage (..))
 import qualified Ledger.Oracle                    as Oracle
 import           Ledger.Scripts                   (unitDatum)
+import qualified Ledger.TimeSlot                  as TimeSlot
 import           Ledger.Tokens
 import qualified Ledger.Typed.Scripts             as Scripts
 import           Ledger.Value                     as Value
 import           Plutus.Contract
 import           Plutus.Contract.Util             (loopM)
-import qualified PlutusTx                         as PlutusTx
+import qualified PlutusTx
 import           PlutusTx.Prelude
 
 import           Plutus.Contract.StateMachine     (AsSMContractError, State (..), StateMachine (..), Void)
@@ -97,7 +98,7 @@ import qualified Prelude                          as Haskell
 --
 data Future =
     Future
-        { ftDeliveryDate  :: Slot
+        { ftDeliveryDate  :: POSIXTime
         , ftUnits         :: Integer
         , ftUnitPrice     :: Value
         , ftInitialMargin :: Value
@@ -221,7 +222,7 @@ data FutureSetup =
         -- ^ Initial owner of the short token
         , longPK        :: PubKey
         -- ^ Initial owner of the long token
-        , contractStart :: Slot
+        , contractStart :: POSIXTime
         -- ^ Start of the futures contract itself. By this time the setup code
         --   has to be finished, otherwise the contract is void.
         } deriving stock (Haskell.Show, Generic)
@@ -364,10 +365,10 @@ transition future@Future{ftDeliveryDate, ftPriceOracle} owners State{stateData=s
                     }
                     )
         (Running accounts, Settle ov)
-            | Just (Observation{obsValue=spotPrice, obsSlot=oracleDate}, oracleConstraints) <- verifyOracle ftPriceOracle ov, ftDeliveryDate == oracleDate ->
+            | Just (Observation{obsValue=spotPrice, obsSlot=oracleDate}, oracleConstraints) <- verifyOracle ftPriceOracle ov, ftDeliveryDate == TimeSlot.slotToPOSIXTime oracleDate ->
                 let payment = payouts future accounts spotPrice
                     constraints =
-                        Constraints.mustValidateIn (Interval.from ftDeliveryDate)
+                        Constraints.mustValidateIn (Interval.from $ TimeSlot.posixTimeToSlot ftDeliveryDate)
                         <> oracleConstraints
                         <> payoutsTx payment owners
                 in Just ( constraints
@@ -377,7 +378,7 @@ transition future@Future{ftDeliveryDate, ftPriceOracle} owners State{stateData=s
                             }
                         )
         (Running accounts, SettleEarly ov)
-            | Just (Observation{obsValue=spotPrice, obsSlot=oracleDate}, oracleConstraints) <- verifyOracle ftPriceOracle ov, Just vRole <- violatingRole future accounts spotPrice, ftDeliveryDate > oracleDate ->
+            | Just (Observation{obsValue=spotPrice, obsSlot=oracleDate}, oracleConstraints) <- verifyOracle ftPriceOracle ov, Just vRole <- violatingRole future accounts spotPrice, ftDeliveryDate > TimeSlot.slotToPOSIXTime oracleDate ->
                 let
                     total = totalMargin accounts
                     FutureAccounts{ftoLongAccount, ftoShortAccount} = owners

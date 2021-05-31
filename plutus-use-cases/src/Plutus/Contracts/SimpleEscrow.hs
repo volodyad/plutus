@@ -24,7 +24,7 @@ import           Control.Monad.Error.Lens (throwing)
 import           Data.Aeson               (FromJSON, ToJSON)
 import           GHC.Generics             (Generic)
 
-import           Ledger                   (PubKeyHash, Slot, TxId, txId, txSignedBy, valuePaidTo)
+import           Ledger                   (POSIXTime, PubKeyHash, TxId, txId, txSignedBy, valuePaidTo)
 import qualified Ledger
 import qualified Ledger.Constraints       as Constraints
 import           Ledger.Contexts          (ScriptContext (..), TxInfo (..))
@@ -51,8 +51,8 @@ data EscrowParams =
     -- ^ Value to be paid out to the redeemer.
     , expecting :: Value
     -- ^ Value to be received by the payee.
-    , deadline  :: Slot
-    -- ^ Slot after which the contract expires.
+    , deadline  :: POSIXTime
+    -- ^ Time after which the contract expires.
     }
     deriving stock (Haskell.Show, Generic)
     deriving anyclass (ToJSON, FromJSON)
@@ -110,7 +110,7 @@ validate params action ScriptContext{scriptContextTxInfo=txInfo} =
   case action of
     Redeem ->
           -- Can't redeem after the deadline
-      let notLapsed = TimeSlot.slotToPOSIXTime (deadline params) `after` txInfoValidRange txInfo
+      let notLapsed = deadline params `after` txInfoValidRange txInfo
           -- Payee has to have been paid
           paid      = valuePaidTo txInfo (payee params) `geq` expecting params
        in traceIfFalse "escrow-deadline-lapsed" notLapsed
@@ -119,7 +119,7 @@ validate params action ScriptContext{scriptContextTxInfo=txInfo} =
           -- Has to be the person that locked value requesting the refund
       let signed = txInfo `txSignedBy` payee params
           -- And we only refund after the deadline has passed
-          lapsed = TimeSlot.slotToPOSIXTime (deadline params) `before` txInfoValidRange txInfo
+          lapsed = deadline params `before` txInfoValidRange txInfo
        in traceIfFalse "escrow-not-signed" signed
           && traceIfFalse "refund-too-early" lapsed
 
@@ -128,9 +128,9 @@ validate params action ScriptContext{scriptContextTxInfo=txInfo} =
 lockEp :: Contract () EscrowSchema EscrowError ()
 lockEp = do
   params <- endpoint @"lock"
-  let tx = Constraints.mustPayToTheScript params (paying params)
+  let valRange = Interval.to (Haskell.pred $ TimeSlot.posixTimeToSlot $ deadline params)
+      tx = Constraints.mustPayToTheScript params (paying params)
             <> Constraints.mustValidateIn valRange
-      valRange = Interval.to (Haskell.pred $ deadline params)
   void $ submitTxConstraints escrowInstance tx
 
 -- | Attempts to redeem the 'Value' locked into this script by paying in from
@@ -145,13 +145,13 @@ redeemEp = mapError (review _EscrowError) $ endpoint @"redeem" >>= redeem
 
       let value = foldMap (Tx.txOutValue . Tx.txOutTxOut) unspentOutputs
           tx = Typed.collectFromScript unspentOutputs Redeem
-                      <> Constraints.mustValidateIn (Interval.to (Haskell.pred $ deadline params))
+                      <> Constraints.mustValidateIn (Interval.to (Haskell.pred $ TimeSlot.posixTimeToSlot $ deadline params))
                       -- Pay me the output of this script
                       <> Constraints.mustPayToPubKey (Ledger.pubKeyHash pk) value
                       -- Pay the payee their due
                       <> Constraints.mustPayToPubKey (payee params) (expecting params)
 
-      if slot >= deadline params
+      if slot >= TimeSlot.posixTimeToSlot (deadline params)
       then throwing _RedeemFailed DeadlinePassed
       else RedeemSuccess . txId <$> do submitTxConstraintsSpending escrowInstance unspentOutputs tx
 
@@ -163,7 +163,7 @@ refundEp = mapError (review _EscrowError) $ endpoint @"refund" >>= refund
       unspentOutputs <- utxoAt escrowAddress
 
       let tx = Typed.collectFromScript unspentOutputs Refund
-                  <> Constraints.mustValidateIn (Interval.from (Haskell.succ $ deadline params))
+                  <> Constraints.mustValidateIn (Interval.from (Haskell.succ $ TimeSlot.posixTimeToSlot $ deadline params))
 
       if Constraints.modifiesUtxoSet tx
       then RefundSuccess . txId <$> submitTxConstraintsSpending escrowInstance unspentOutputs tx

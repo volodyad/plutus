@@ -34,7 +34,7 @@ import           Control.Lens                 (makeClassyPrisms)
 import           Control.Monad                (forever)
 import           Data.Aeson                   (FromJSON, ToJSON)
 import           GHC.Generics                 (Generic)
-import           Ledger                       (PubKeyHash, Slot, pubKeyHash)
+import           Ledger                       (POSIXTime, PubKeyHash, pubKeyHash)
 import           Ledger.Constraints           (TxConstraints)
 import qualified Ledger.Constraints           as Constraints
 import           Ledger.Contexts              (ScriptContext (..), TxInfo (..))
@@ -74,7 +74,7 @@ data Payment = Payment
     -- ^ How much to pay out
     , paymentRecipient :: PubKeyHash
     -- ^ Address to pay the value to
-    , paymentDeadline  :: Slot
+    , paymentDeadline  :: POSIXTime
     -- ^ Time until the required amount of signatures has to be collected.
     }
     deriving stock (Haskell.Show, Generic)
@@ -168,7 +168,7 @@ isValidProposal vl (Payment amt _ _) = amt `Value.leq` vl
 -- | Check whether a proposed 'Payment' has expired.
 proposalExpired :: TxInfo -> Payment -> Bool
 proposalExpired TxInfo{txInfoValidRange} Payment{paymentDeadline} =
-    TimeSlot.slotToPOSIXTime paymentDeadline `Interval.before` txInfoValidRange
+    paymentDeadline `Interval.before` txInfoValidRange
 
 {-# INLINABLE proposalAccepted #-}
 -- | Check whether enough signatories (represented as a list of public keys)
@@ -212,7 +212,7 @@ transition params State{ stateData =s, stateValue=currentValue} i = case (s, i) 
                     }
                  )
     (CollectingSignatures payment _, Cancel) ->
-        let constraints = Constraints.mustValidateIn (Interval.from (paymentDeadline payment)) in
+        let constraints = Constraints.mustValidateIn (Interval.from (TimeSlot.posixTimeToSlot $ paymentDeadline payment)) in
         Just ( constraints
              , State
                 { stateData = Holding
@@ -223,7 +223,7 @@ transition params State{ stateData =s, stateValue=currentValue} i = case (s, i) 
         | proposalAccepted params pkh ->
             let Payment{paymentAmount, paymentRecipient, paymentDeadline} = payment
                 constraints =
-                    Constraints.mustValidateIn (Interval.to paymentDeadline)
+                    Constraints.mustValidateIn (Interval.to $ TimeSlot.posixTimeToSlot paymentDeadline)
                     <> Constraints.mustPayToPubKey paymentRecipient paymentAmount
             in Just ( constraints
                     , State

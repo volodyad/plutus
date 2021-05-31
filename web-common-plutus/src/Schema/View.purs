@@ -20,9 +20,10 @@ import Halogen.HTML.Events (onChecked, onClick, onValueInput)
 import Halogen.HTML.Properties (IProp, InputType(..), checked, class_, classes, for, id_, name, placeholder, required, type_, value)
 import Halogen.HTML.Properties as HP
 import Icons (Icon(..), icon)
-import Ledger.Extra (_LowerBoundExtended, _LowerBoundInclusive, _UpperBoundExtended, _UpperBoundInclusive, _ivFrom, _ivTo, humaniseInterval)
+import Ledger.Extra (_LowerBoundExtended, _LowerBoundInclusive, _UpperBoundExtended, _UpperBoundInclusive, _ivFrom, _ivTo, humaniseSlotInterval, humaniseTimeInterval)
 import Plutus.V1.Ledger.Interval (Extended(..), Interval, _Interval)
 import Plutus.V1.Ledger.Slot (Slot(..))
+import Plutus.V1.Ledger.Time (POSIXTime(..))
 import Prim.TypeError (class Warn, Text)
 import Schema (FormArgumentF(..))
 import Schema.Types (FieldEvent(..), FormArgument, FormEvent(..))
@@ -241,7 +242,7 @@ actionArgumentField ancestors isNested (Fix (FormSlotRangeF interval)) =
         ]
     , small
         [ classes [ formText, textMuted ] ]
-        [ text $ humaniseInterval interval
+        [ text $ humaniseSlotInterval interval
         ]
     ]
   where
@@ -286,6 +287,96 @@ actionArgumentField ancestors isNested (Fix (FormSlotRangeF interval)) =
               Finite (Slot slot) -> show slot.getSlot
               _ -> mempty
       , onValueInput $ map (\n -> SetField (SetSlotRangeField (set extensionLens (Finite (Slot { getSlot: n })) interval))) <<< BigInteger.fromString
+      ]
+
+actionArgumentField ancestors isNested (Fix (FormPOSIXTimeRangeF interval)) =
+  div [ class_ formGroup, nesting isNested ]
+    [ label [ for "interval" ] [ text "Interval" ]
+    , formRow_
+        [ label [ for "ivFrom", classes [ col, colFormLabel ] ] [ text "From" ]
+        , label [ for "ivTo", classes [ col, colFormLabel ] ] [ text "To" ]
+        ]
+    , formRow_
+        [ let
+            extensionLens :: Lens' (Interval POSIXTime) (Extended POSIXTime)
+            extensionLens = _Interval <<< _ivFrom <<< _LowerBoundExtended
+
+            inclusionLens :: Lens' (Interval POSIXTime) Boolean
+            inclusionLens = _Interval <<< _ivFrom <<< _LowerBoundInclusive
+          in
+            div [ classes [ col, extentFieldClass ] ]
+              [ inputGroup_
+                  [ inputGroupPrepend_
+                      [ extentFieldExtendedButton extensionLens NegInf
+                      , extentFieldInclusionButton inclusionLens StepBackward Reverse
+                      ]
+                  , extentFieldInput extensionLens
+                  ]
+              ]
+        , let
+            extensionLens :: Lens' (Interval POSIXTime) (Extended POSIXTime)
+            extensionLens = _Interval <<< _ivTo <<< _UpperBoundExtended
+
+            inclusionLens :: Lens' (Interval POSIXTime) Boolean
+            inclusionLens = _Interval <<< _ivTo <<< _UpperBoundInclusive
+          in
+            div [ classes [ col, extentFieldClass ] ]
+              [ inputGroup_
+                  [ extentFieldInput extensionLens
+                  , inputGroupAppend_
+                      [ extentFieldInclusionButton inclusionLens StepForward Play
+                      , extentFieldExtendedButton extensionLens PosInf
+                      ]
+                  ]
+              ]
+        ]
+    , small
+        [ classes [ formText, textMuted ] ]
+        [ text $ humaniseTimeInterval interval
+        ]
+    ]
+  where
+  extentFieldClass = ClassName "extent-field"
+
+  extentFieldInclusionButton :: Lens' (Interval POSIXTime) Boolean -> Icon -> Icon -> HTML p FormEvent
+  extentFieldInclusionButton inclusionLens inclusionIcon exclusionIcon =
+    button
+      [ classes [ btn, btnSmall, btnPrimary ]
+      , onClick $ const $ Just $ SetField $ SetPOSIXTimeRangeField $ over inclusionLens not interval
+      ]
+      [ icon
+          $ if view inclusionLens interval then
+              inclusionIcon
+            else
+              exclusionIcon
+      ]
+
+  extentFieldExtendedButton :: Lens' (Interval POSIXTime) (Extended POSIXTime) -> Extended POSIXTime -> HTML p FormEvent
+  extentFieldExtendedButton extensionLens value =
+    button
+      [ classes
+          [ btn
+          , btnSmall
+          , if view extensionLens interval == value then
+              btnPrimary
+            else
+              btnInfo
+          ]
+      , onClick $ const $ Just $ SetField $ SetPOSIXTimeRangeField $ set extensionLens value interval
+      ]
+      [ icon Infinity ]
+
+  extentFieldInput :: Lens' (Interval POSIXTime) (Extended POSIXTime) -> HTML p FormEvent
+  extentFieldInput extensionLens =
+    input
+      [ type_ InputNumber
+      , class_ formControl
+      , HP.min zero
+      , value
+          $ case view extensionLens interval of
+              Finite (POSIXTime time) -> show time.getPOSIXTime
+              _ -> mempty
+      , onValueInput $ map (\n -> SetField (SetPOSIXTimeRangeField (set extensionLens (Finite (POSIXTime { getPOSIXTime: n })) interval))) <<< BigInteger.fromString
       ]
 
 actionArgumentField ancestors isNested (Fix (FormValueF value)) =

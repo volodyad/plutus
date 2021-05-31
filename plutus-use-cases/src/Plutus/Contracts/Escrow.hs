@@ -46,8 +46,8 @@ import           Control.Monad.Error.Lens (throwing)
 import           Data.Aeson               (FromJSON, ToJSON)
 import           GHC.Generics             (Generic)
 
-import           Ledger                   (Datum (..), DatumHash, PubKeyHash, Slot, TxId, TxOutTx (..), ValidatorHash,
-                                           interval, scriptOutputsAt, txId, txSignedBy, valuePaidTo)
+import           Ledger                   (Datum (..), DatumHash, POSIXTime, PubKeyHash, TxId, TxOutTx (..),
+                                           ValidatorHash, interval, scriptOutputsAt, txId, txSignedBy, valuePaidTo)
 import qualified Ledger
 import           Ledger.Constraints       (TxConstraints)
 import qualified Ledger.Constraints       as Constraints
@@ -133,7 +133,7 @@ payToScriptTarget = ScriptTarget
 -- | Definition of an escrow contract, consisting of a deadline and a list of targets
 data EscrowParams d =
     EscrowParams
-        { escrowDeadline :: Slot
+        { escrowDeadline :: POSIXTime
         -- ^ Latest point at which the outputs may be spent.
         , escrowTargets  :: [EscrowTarget d]
         -- ^ Where the money should go. For each target, the contract checks that
@@ -198,10 +198,10 @@ validate :: EscrowParams DatumHash -> PubKeyHash -> Action -> ScriptContext -> B
 validate EscrowParams{escrowDeadline, escrowTargets} contributor action ScriptContext{scriptContextTxInfo} =
     case action of
         Redeem ->
-            traceIfFalse "escrowDeadline-after" (TimeSlot.slotToPOSIXTime escrowDeadline `after` txInfoValidRange scriptContextTxInfo)
+            traceIfFalse "escrowDeadline-after" (escrowDeadline `after` txInfoValidRange scriptContextTxInfo)
             && traceIfFalse "meetsTarget" (all (meetsTarget scriptContextTxInfo) escrowTargets)
         Refund ->
-            traceIfFalse "escrowDeadline-before" (TimeSlot.slotToPOSIXTime escrowDeadline `before` txInfoValidRange scriptContextTxInfo)
+            traceIfFalse "escrowDeadline-before" (escrowDeadline `before` txInfoValidRange scriptContextTxInfo)
             && traceIfFalse "txSignedBy" (scriptContextTxInfo `txSignedBy` contributor)
 
 scriptInstance :: EscrowParams Datum -> Scripts.ScriptInstance Escrow
@@ -219,7 +219,7 @@ escrowContract escrow =
         payAndRefund = do
             vl <- endpoint @"pay-escrow"
             _ <- pay inst escrow vl
-            _ <- awaitSlot (escrowDeadline escrow)
+            _ <- awaitSlot (TimeSlot.posixTimeToSlot $ escrowDeadline escrow)
             refund inst escrow
     in void payAndRefund `select` void (redeemEp escrow)
 
@@ -255,7 +255,7 @@ pay ::
 pay inst escrow vl = mapError (review _EContractError) $ do
     pk <- ownPubKey
     let tx = Constraints.mustPayToTheScript (Ledger.pubKeyHash pk) vl
-                <> Constraints.mustValidateIn (Ledger.interval 1 (escrowDeadline escrow))
+                <> Constraints.mustValidateIn (Ledger.interval 1 (TimeSlot.posixTimeToSlot $ escrowDeadline escrow))
     txId <$> submitTxConstraints inst tx
 
 newtype RedeemSuccess = RedeemSuccess TxId
@@ -293,11 +293,11 @@ redeem inst escrow = mapError (review _EscrowError) $ do
     current <- currentSlot
     unspentOutputs <- utxoAt addr
     let
-        valRange = Interval.to (Haskell.pred $ escrowDeadline escrow)
+        valRange = Interval.to (Haskell.pred $ TimeSlot.posixTimeToSlot $ escrowDeadline escrow)
         tx = Typed.collectFromScript unspentOutputs Redeem
                 <> foldMap mkTx (escrowTargets escrow)
                 <> Constraints.mustValidateIn valRange
-    if current >= escrowDeadline escrow
+    if current >= TimeSlot.posixTimeToSlot (escrowDeadline escrow)
     then throwing _RedeemFailed DeadlinePassed
     else if foldMap (Tx.txOutValue . Tx.txOutTxOut) unspentOutputs `lt` targetTotal escrow
          then throwing _RedeemFailed NotEnoughFundsAtAddress
@@ -333,7 +333,7 @@ refund inst escrow = do
     unspentOutputs <- utxoAt (Scripts.scriptAddress inst)
     let flt _ (TxOutTx _ txOut) = Ledger.txOutDatum txOut == Just (Ledger.datumHash $ Datum (PlutusTx.toData $ Ledger.pubKeyHash pk))
         tx' = Typed.collectFromScriptFilter flt unspentOutputs Refund
-                <> Constraints.mustValidateIn (from (Haskell.succ $ escrowDeadline escrow))
+                <> Constraints.mustValidateIn (from (Haskell.succ $ TimeSlot.posixTimeToSlot $ escrowDeadline escrow))
     if Constraints.modifiesUtxoSet tx'
     then RefundSuccess . txId <$> submitTxConstraintsSpending inst unspentOutputs tx'
     else throwing _RefundFailed ()
@@ -355,7 +355,7 @@ payRedeemRefund params vl = do
     let inst = scriptInstance params
     -- Pay the value 'vl' into the contract
     _ <- pay inst params vl
-    outcome <- selectEither (awaitSlot (escrowDeadline params)) (fundsAtAddressGeq (Scripts.scriptAddress inst) (targetTotal params))
+    outcome <- selectEither (awaitSlot (TimeSlot.posixTimeToSlot $ escrowDeadline params)) (fundsAtAddressGeq (Scripts.scriptAddress inst) (targetTotal params))
     -- wait
     -- for the 'targetTotal' of the contract to appear at the address, or
     -- for the 'escrowDeadline' to pass, whichever happens first.
