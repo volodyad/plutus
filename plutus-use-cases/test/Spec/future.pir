@@ -4355,6 +4355,28 @@
                           )
                           (termbind
                             (strict)
+                            (vardecl from (all a (type) (fun a [Interval a])))
+                            (abs
+                              a
+                              (type)
+                              (lam
+                                s
+                                a
+                                [
+                                  [
+                                    { Interval a }
+                                    [
+                                      [ { LowerBound a } [ { Finite a } s ] ]
+                                      True
+                                    ]
+                                  ]
+                                  [ [ { UpperBound a } { PosInf a } ] True ]
+                                ]
+                              )
+                            )
+                          )
+                          (termbind
+                            (strict)
                             (vardecl
                               greaterThanInteger
                               (fun (con integer) (fun (con integer) Bool))
@@ -5701,52 +5723,11 @@
                                                                                                                                           [
                                                                                                                                             MustValidateIn
                                                                                                                                             [
-                                                                                                                                              [
-                                                                                                                                                {
-                                                                                                                                                  Interval
-                                                                                                                                                  (con integer)
-                                                                                                                                                }
-                                                                                                                                                [
-                                                                                                                                                  [
-                                                                                                                                                    {
-                                                                                                                                                      LowerBound
-                                                                                                                                                      (con integer)
-                                                                                                                                                    }
-                                                                                                                                                    [
-                                                                                                                                                      {
-                                                                                                                                                        Finite
-                                                                                                                                                        (con integer)
-                                                                                                                                                      }
-                                                                                                                                                      [
-                                                                                                                                                        [
-                                                                                                                                                          (builtin
-                                                                                                                                                            subtractInteger
-                                                                                                                                                          )
-                                                                                                                                                          ds
-                                                                                                                                                        ]
-                                                                                                                                                        (con
-                                                                                                                                                          integer
-                                                                                                                                                            1596059091
-                                                                                                                                                        )
-                                                                                                                                                      ]
-                                                                                                                                                    ]
-                                                                                                                                                  ]
-                                                                                                                                                  True
-                                                                                                                                                ]
-                                                                                                                                              ]
-                                                                                                                                              [
-                                                                                                                                                [
-                                                                                                                                                  {
-                                                                                                                                                    UpperBound
-                                                                                                                                                    (con integer)
-                                                                                                                                                  }
-                                                                                                                                                  {
-                                                                                                                                                    PosInf
-                                                                                                                                                    (con integer)
-                                                                                                                                                  }
-                                                                                                                                                ]
-                                                                                                                                                True
-                                                                                                                                              ]
+                                                                                                                                              {
+                                                                                                                                                from
+                                                                                                                                                (con integer)
+                                                                                                                                              }
+                                                                                                                                              ds
                                                                                                                                             ]
                                                                                                                                           ]
                                                                                                                                         ]

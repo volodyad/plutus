@@ -7024,36 +7024,25 @@
                                                                                                                                                                       (con integer)
                                                                                                                                                                     }
                                                                                                                                                                     [
-                                                                                                                                                                      [
-                                                                                                                                                                        (builtin
-                                                                                                                                                                          subtractInteger
-                                                                                                                                                                        )
+                                                                                                                                                                      {
                                                                                                                                                                         [
-                                                                                                                                                                          {
-                                                                                                                                                                            [
-                                                                                                                                                                              Proposal_match
-                                                                                                                                                                              p
-                                                                                                                                                                            ]
-                                                                                                                                                                            (con integer)
-                                                                                                                                                                          }
+                                                                                                                                                                          Proposal_match
+                                                                                                                                                                          p
+                                                                                                                                                                        ]
+                                                                                                                                                                        (con integer)
+                                                                                                                                                                      }
+                                                                                                                                                                      (lam
+                                                                                                                                                                        ds
+                                                                                                                                                                        (con bytestring)
+                                                                                                                                                                        (lam
+                                                                                                                                                                          ds
+                                                                                                                                                                          (con bytestring)
                                                                                                                                                                           (lam
                                                                                                                                                                             ds
-                                                                                                                                                                            (con bytestring)
-                                                                                                                                                                            (lam
-                                                                                                                                                                              ds
-                                                                                                                                                                              (con bytestring)
-                                                                                                                                                                              (lam
-                                                                                                                                                                                ds
-                                                                                                                                                                                (con integer)
-                                                                                                                                                                                ds
-                                                                                                                                                                              )
-                                                                                                                                                                            )
+                                                                                                                                                                            (con integer)
+                                                                                                                                                                            ds
                                                                                                                                                                           )
-                                                                                                                                                                        ]
-                                                                                                                                                                      ]
-                                                                                                                                                                      (con
-                                                                                                                                                                        integer
-                                                                                                                                                                          1596059091
+                                                                                                                                                                        )
                                                                                                                                                                       )
                                                                                                                                                                     ]
                                                                                                                                                                   ]
@@ -7818,36 +7807,25 @@
                                                                                                                                                                 (con integer)
                                                                                                                                                               }
                                                                                                                                                               [
-                                                                                                                                                                [
-                                                                                                                                                                  (builtin
-                                                                                                                                                                    subtractInteger
-                                                                                                                                                                  )
+                                                                                                                                                                {
                                                                                                                                                                   [
-                                                                                                                                                                    {
-                                                                                                                                                                      [
-                                                                                                                                                                        Proposal_match
-                                                                                                                                                                        p
-                                                                                                                                                                      ]
-                                                                                                                                                                      (con integer)
-                                                                                                                                                                    }
+                                                                                                                                                                    Proposal_match
+                                                                                                                                                                    p
+                                                                                                                                                                  ]
+                                                                                                                                                                  (con integer)
+                                                                                                                                                                }
+                                                                                                                                                                (lam
+                                                                                                                                                                  ds
+                                                                                                                                                                  (con bytestring)
+                                                                                                                                                                  (lam
+                                                                                                                                                                    ds
+                                                                                                                                                                    (con bytestring)
                                                                                                                                                                     (lam
                                                                                                                                                                       ds
-                                                                                                                                                                      (con bytestring)
-                                                                                                                                                                      (lam
-                                                                                                                                                                        ds
-                                                                                                                                                                        (con bytestring)
-                                                                                                                                                                        (lam
-                                                                                                                                                                          ds
-                                                                                                                                                                          (con integer)
-                                                                                                                                                                          ds
-                                                                                                                                                                        )
-                                                                                                                                                                      )
+                                                                                                                                                                      (con integer)
+                                                                                                                                                                      ds
                                                                                                                                                                     )
-                                                                                                                                                                  ]
-                                                                                                                                                                ]
-                                                                                                                                                                (con
-                                                                                                                                                                  integer
-                                                                                                                                                                    1596059091
+                                                                                                                                                                  )
                                                                                                                                                                 )
                                                                                                                                                               ]
                                                                                                                                                             ]
@@ -8938,36 +8916,25 @@
                                                                                                                                                               (con integer)
                                                                                                                                                             }
                                                                                                                                                             [
-                                                                                                                                                              [
-                                                                                                                                                                (builtin
-                                                                                                                                                                  subtractInteger
-                                                                                                                                                                )
+                                                                                                                                                              {
                                                                                                                                                                 [
-                                                                                                                                                                  {
-                                                                                                                                                                    [
-                                                                                                                                                                      Proposal_match
-                                                                                                                                                                      p
-                                                                                                                                                                    ]
-                                                                                                                                                                    (con integer)
-                                                                                                                                                                  }
+                                                                                                                                                                  Proposal_match
+                                                                                                                                                                  p
+                                                                                                                                                                ]
+                                                                                                                                                                (con integer)
+                                                                                                                                                              }
+                                                                                                                                                              (lam
+                                                                                                                                                                ds
+                                                                                                                                                                (con bytestring)
+                                                                                                                                                                (lam
+                                                                                                                                                                  ds
+                                                                                                                                                                  (con bytestring)
                                                                                                                                                                   (lam
                                                                                                                                                                     ds
-                                                                                                                                                                    (con bytestring)
-                                                                                                                                                                    (lam
-                                                                                                                                                                      ds
-                                                                                                                                                                      (con bytestring)
-                                                                                                                                                                      (lam
-                                                                                                                                                                        ds
-                                                                                                                                                                        (con integer)
-                                                                                                                                                                        ds
-                                                                                                                                                                      )
-                                                                                                                                                                    )
+                                                                                                                                                                    (con integer)
+                                                                                                                                                                    ds
                                                                                                                                                                   )
-                                                                                                                                                                ]
-                                                                                                                                                              ]
-                                                                                                                                                              (con
-                                                                                                                                                                integer
-                                                                                                                                                                  1596059091
+                                                                                                                                                                )
                                                                                                                                                               )
                                                                                                                                                             ]
                                                                                                                                                           ]
@@ -14711,219 +14678,6 @@
                                       (termbind
                                         (strict)
                                         (vardecl
-                                          slotRangeToPOSIXTimeRange
-                                          (fun [Interval (con integer)] [Interval (con integer)])
-                                        )
-                                        (lam
-                                          sr
-                                          [Interval (con integer)]
-                                          [
-                                            {
-                                              [
-                                                { Interval_match (con integer) }
-                                                sr
-                                              ]
-                                              [Interval (con integer)]
-                                            }
-                                            (lam
-                                              from
-                                              [LowerBound (con integer)]
-                                              (lam
-                                                to
-                                                [UpperBound (con integer)]
-                                                [
-                                                  [
-                                                    { Interval (con integer) }
-                                                    [
-                                                      {
-                                                        [
-                                                          {
-                                                            LowerBound_match
-                                                            (con integer)
-                                                          }
-                                                          from
-                                                        ]
-                                                        [LowerBound (con integer)]
-                                                      }
-                                                      (lam
-                                                        e
-                                                        [Extended (con integer)]
-                                                        (lam
-                                                          c
-                                                          Bool
-                                                          [
-                                                            [
-                                                              {
-                                                                LowerBound
-                                                                (con integer)
-                                                              }
-                                                              [
-                                                                [
-                                                                  [
-                                                                    [
-                                                                      {
-                                                                        [
-                                                                          {
-                                                                            Extended_match
-                                                                            (con integer)
-                                                                          }
-                                                                          e
-                                                                        ]
-                                                                        (fun Unit [Extended (con integer)])
-                                                                      }
-                                                                      (lam
-                                                                        a
-                                                                        (con integer)
-                                                                        (lam
-                                                                          thunk
-                                                                          Unit
-                                                                          [
-                                                                            {
-                                                                              Finite
-                                                                              (con integer)
-                                                                            }
-                                                                            [
-                                                                              [
-                                                                                (builtin
-                                                                                  addInteger
-                                                                                )
-                                                                                a
-                                                                              ]
-                                                                              (con
-                                                                                integer
-                                                                                  1596059091
-                                                                              )
-                                                                            ]
-                                                                          ]
-                                                                        )
-                                                                      )
-                                                                    ]
-                                                                    (lam
-                                                                      thunk
-                                                                      Unit
-                                                                      {
-                                                                        NegInf
-                                                                        (con integer)
-                                                                      }
-                                                                    )
-                                                                  ]
-                                                                  (lam
-                                                                    thunk
-                                                                    Unit
-                                                                    {
-                                                                      PosInf
-                                                                      (con integer)
-                                                                    }
-                                                                  )
-                                                                ]
-                                                                Unit
-                                                              ]
-                                                            ]
-                                                            c
-                                                          ]
-                                                        )
-                                                      )
-                                                    ]
-                                                  ]
-                                                  [
-                                                    {
-                                                      [
-                                                        {
-                                                          UpperBound_match
-                                                          (con integer)
-                                                        }
-                                                        to
-                                                      ]
-                                                      [UpperBound (con integer)]
-                                                    }
-                                                    (lam
-                                                      e
-                                                      [Extended (con integer)]
-                                                      (lam
-                                                        c
-                                                        Bool
-                                                        [
-                                                          [
-                                                            {
-                                                              UpperBound
-                                                              (con integer)
-                                                            }
-                                                            [
-                                                              [
-                                                                [
-                                                                  [
-                                                                    {
-                                                                      [
-                                                                        {
-                                                                          Extended_match
-                                                                          (con integer)
-                                                                        }
-                                                                        e
-                                                                      ]
-                                                                      (fun Unit [Extended (con integer)])
-                                                                    }
-                                                                    (lam
-                                                                      a
-                                                                      (con integer)
-                                                                      (lam
-                                                                        thunk
-                                                                        Unit
-                                                                        [
-                                                                          {
-                                                                            Finite
-                                                                            (con integer)
-                                                                          }
-                                                                          [
-                                                                            [
-                                                                              (builtin
-                                                                                addInteger
-                                                                              )
-                                                                              a
-                                                                            ]
-                                                                            (con
-                                                                              integer
-                                                                                1596059091
-                                                                            )
-                                                                          ]
-                                                                        ]
-                                                                      )
-                                                                    )
-                                                                  ]
-                                                                  (lam
-                                                                    thunk
-                                                                    Unit
-                                                                    {
-                                                                      NegInf
-                                                                      (con integer)
-                                                                    }
-                                                                  )
-                                                                ]
-                                                                (lam
-                                                                  thunk
-                                                                  Unit
-                                                                  {
-                                                                    PosInf
-                                                                    (con integer)
-                                                                  }
-                                                                )
-                                                              ]
-                                                              Unit
-                                                            ]
-                                                          ]
-                                                          c
-                                                        ]
-                                                      )
-                                                    )
-                                                  ]
-                                                ]
-                                              )
-                                            )
-                                          ]
-                                        )
-                                      )
-                                      (termbind
-                                        (strict)
-                                        (vardecl
                                           snd
                                           (all a (type) (all b (type) (fun [[Tuple2 a] b] b)))
                                         )
@@ -17043,10 +16797,7 @@
                                                                       }
                                                                       fOrdPOSIXTime
                                                                     ]
-                                                                    [
-                                                                      slotRangeToPOSIXTimeRange
-                                                                      interval
-                                                                    ]
+                                                                    interval
                                                                   ]
                                                                   [
                                                                     {

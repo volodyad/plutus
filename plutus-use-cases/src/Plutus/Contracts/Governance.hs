@@ -178,7 +178,7 @@ transition Params{..} State{ stateData = s, stateValue} i = case (s, i) of
     (GovState law mph (Just (Voting p oldMap)), AddVote tokenName vote) ->
         let newMap = AssocMap.insert tokenName vote oldMap
             constraints = ownsVotingToken mph tokenName
-                        <> Constraints.mustValidateIn (Interval.to (TimeSlot.posixTimeToSlot $ votingDeadline p))
+                        <> Constraints.mustValidateIn (Interval.to (votingDeadline p))
         in Just (constraints, State (GovState law mph (Just (Voting p newMap))) stateValue)
 
     (GovState oldLaw mph (Just (Voting p votes)), FinishVoting) ->

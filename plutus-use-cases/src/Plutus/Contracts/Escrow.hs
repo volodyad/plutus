@@ -255,7 +255,7 @@ pay ::
 pay inst escrow vl = mapError (review _EContractError) $ do
     pk <- ownPubKey
     let tx = Constraints.mustPayToTheScript (Ledger.pubKeyHash pk) vl
-                <> Constraints.mustValidateIn (Ledger.interval 1 (TimeSlot.posixTimeToSlot $ escrowDeadline escrow))
+                <> Constraints.mustValidateIn (Ledger.interval 1 (escrowDeadline escrow))
     txId <$> submitTxConstraints inst tx
 
 newtype RedeemSuccess = RedeemSuccess TxId
@@ -293,7 +293,7 @@ redeem inst escrow = mapError (review _EscrowError) $ do
     current <- currentSlot
     unspentOutputs <- utxoAt addr
     let
-        valRange = Interval.to (Haskell.pred $ TimeSlot.posixTimeToSlot $ escrowDeadline escrow)
+        valRange = Interval.to (Haskell.pred $ escrowDeadline escrow)
         tx = Typed.collectFromScript unspentOutputs Redeem
                 <> foldMap mkTx (escrowTargets escrow)
                 <> Constraints.mustValidateIn valRange
@@ -333,7 +333,7 @@ refund inst escrow = do
     unspentOutputs <- utxoAt (Scripts.scriptAddress inst)
     let flt _ (TxOutTx _ txOut) = Ledger.txOutDatum txOut == Just (Ledger.datumHash $ Datum (PlutusTx.toData $ Ledger.pubKeyHash pk))
         tx' = Typed.collectFromScriptFilter flt unspentOutputs Refund
-                <> Constraints.mustValidateIn (from (Haskell.succ $ TimeSlot.posixTimeToSlot $ escrowDeadline escrow))
+                <> Constraints.mustValidateIn (from (Haskell.succ $ escrowDeadline escrow))
     if Constraints.modifiesUtxoSet tx'
     then RefundSuccess . txId <$> submitTxConstraintsSpending inst unspentOutputs tx'
     else throwing _RefundFailed ()

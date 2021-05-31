@@ -368,7 +368,7 @@ transition future@Future{ftDeliveryDate, ftPriceOracle} owners State{stateData=s
             | Just (Observation{obsValue=spotPrice, obsSlot=oracleDate}, oracleConstraints) <- verifyOracle ftPriceOracle ov, ftDeliveryDate == TimeSlot.slotToPOSIXTime oracleDate ->
                 let payment = payouts future accounts spotPrice
                     constraints =
-                        Constraints.mustValidateIn (Interval.from $ TimeSlot.posixTimeToSlot ftDeliveryDate)
+                        Constraints.mustValidateIn (Interval.from ftDeliveryDate)
                         <> oracleConstraints
                         <> payoutsTx payment owners
                 in Just ( constraints

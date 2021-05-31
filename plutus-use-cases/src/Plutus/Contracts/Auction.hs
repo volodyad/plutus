@@ -122,7 +122,7 @@ auctionTransition AuctionParams{apOwner, apAsset, apEndTime} State{stateData=old
         (Ongoing HighestBid{highestBid, highestBidder}, Bid{newBid, newBidder}) | newBid > highestBid -> -- if the new bid is higher,
             let constraints =
                     Constraints.mustPayToPubKey highestBidder (Ada.toValue highestBid) -- we pay back the previous highest bid
-                    <> Constraints.mustValidateIn (Interval.to $ TimeSlot.posixTimeToSlot apEndTime) -- but only if we haven't gone past 'apEndTime'
+                    <> Constraints.mustValidateIn (Interval.to apEndTime) -- but only if we haven't gone past 'apEndTime'
                 newState =
                     State
                         { stateData = Ongoing HighestBid{highestBid = newBid, highestBidder = newBidder}
@@ -132,7 +132,7 @@ auctionTransition AuctionParams{apOwner, apAsset, apEndTime} State{stateData=old
 
         (Ongoing h@HighestBid{highestBidder, highestBid}, Payout) ->
             let constraints =
-                    Constraints.mustValidateIn (Interval.from (TimeSlot.posixTimeToSlot $ apEndTime + 1)) -- When the auction has ended,
+                    Constraints.mustValidateIn (Interval.from (apEndTime + 1)) -- When the auction has ended,
                     <> Constraints.mustPayToPubKey apOwner (Ada.toValue highestBid) -- the owner receives the payment
                     <> Constraints.mustPayToPubKey highestBidder apAsset -- and the highest bidder the asset
                 newState = State { stateData = Finished h, stateValue = mempty }

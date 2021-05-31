@@ -40,7 +40,6 @@ import qualified Ledger.Constraints           as Constraints
 import           Ledger.Contexts              (ScriptContext (..), TxInfo (..))
 import qualified Ledger.Contexts              as Validation
 import qualified Ledger.Interval              as Interval
-import qualified Ledger.TimeSlot              as TimeSlot
 import qualified Ledger.Typed.Scripts         as Scripts
 import           Ledger.Value                 (Value)
 import qualified Ledger.Value                 as Value
@@ -212,7 +211,7 @@ transition params State{ stateData =s, stateValue=currentValue} i = case (s, i) 
                     }
                  )
     (CollectingSignatures payment _, Cancel) ->
-        let constraints = Constraints.mustValidateIn (Interval.from (TimeSlot.posixTimeToSlot $ paymentDeadline payment)) in
+        let constraints = Constraints.mustValidateIn (Interval.from (paymentDeadline payment)) in
         Just ( constraints
              , State
                 { stateData = Holding
@@ -223,7 +222,7 @@ transition params State{ stateData =s, stateValue=currentValue} i = case (s, i) 
         | proposalAccepted params pkh ->
             let Payment{paymentAmount, paymentRecipient, paymentDeadline} = payment
                 constraints =
-                    Constraints.mustValidateIn (Interval.to $ TimeSlot.posixTimeToSlot paymentDeadline)
+                    Constraints.mustValidateIn (Interval.to paymentDeadline)
                     <> Constraints.mustPayToPubKey paymentRecipient paymentAmount
             in Just ( constraints
                     , State

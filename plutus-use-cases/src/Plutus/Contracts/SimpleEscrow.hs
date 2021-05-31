@@ -128,7 +128,7 @@ validate params action ScriptContext{scriptContextTxInfo=txInfo} =
 lockEp :: Contract () EscrowSchema EscrowError ()
 lockEp = do
   params <- endpoint @"lock"
-  let valRange = Interval.to (Haskell.pred $ TimeSlot.posixTimeToSlot $ deadline params)
+  let valRange = Interval.to (Haskell.pred $ deadline params)
       tx = Constraints.mustPayToTheScript params (paying params)
             <> Constraints.mustValidateIn valRange
   void $ submitTxConstraints escrowInstance tx
@@ -145,7 +145,7 @@ redeemEp = mapError (review _EscrowError) $ endpoint @"redeem" >>= redeem
 
       let value = foldMap (Tx.txOutValue . Tx.txOutTxOut) unspentOutputs
           tx = Typed.collectFromScript unspentOutputs Redeem
-                      <> Constraints.mustValidateIn (Interval.to (Haskell.pred $ TimeSlot.posixTimeToSlot $ deadline params))
+                      <> Constraints.mustValidateIn (Interval.to (Haskell.pred $ deadline params))
                       -- Pay me the output of this script
                       <> Constraints.mustPayToPubKey (Ledger.pubKeyHash pk) value
                       -- Pay the payee their due
@@ -163,7 +163,7 @@ refundEp = mapError (review _EscrowError) $ endpoint @"refund" >>= refund
       unspentOutputs <- utxoAt escrowAddress
 
       let tx = Typed.collectFromScript unspentOutputs Refund
-                  <> Constraints.mustValidateIn (Interval.from (Haskell.succ $ TimeSlot.posixTimeToSlot $ deadline params))
+                  <> Constraints.mustValidateIn (Interval.from (Haskell.succ $ deadline params))
 
       if Constraints.modifiesUtxoSet tx
       then RefundSuccess . txId <$> submitTxConstraintsSpending escrowInstance unspentOutputs tx

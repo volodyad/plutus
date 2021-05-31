@@ -166,7 +166,7 @@ contribute cmp = do
     contributor <- pubKeyHash <$> ownPubKey
     let inst = scriptInstance cmp
         tx = Constraints.mustPayToTheScript contributor contribValue
-                <> Constraints.mustValidateIn (Ledger.interval 1 (TimeSlot.posixTimeToSlot $ campaignDeadline cmp))
+                <> Constraints.mustValidateIn (Ledger.interval 1 (campaignDeadline cmp))
     txid <- fmap txId (submitTxConstraints inst tx)
 
     utxo <- watchAddressUntil (Scripts.scriptAddress inst) (TimeSlot.posixTimeToSlot $ campaignCollectionDeadline cmp)
@@ -177,7 +177,7 @@ contribute cmp = do
 
     let flt Ledger.TxOutRef{txOutRefId} _ = txid Haskell.== txOutRefId
         tx' = Typed.collectFromScriptFilter flt utxo Refund
-                <> Constraints.mustValidateIn (TimeSlot.posixTimeRangeToSlotRange $ refundRange cmp)
+                <> Constraints.mustValidateIn (refundRange cmp)
                 <> Constraints.mustBeSignedBy contributor
     if Constraints.modifiesUtxoSet tx'
     then void (submitTxConstraintsSpending inst utxo tx')
@@ -199,7 +199,7 @@ scheduleCollection cmp = do
     unspentOutputs <- utxoAt (Scripts.scriptAddress inst)
 
     let tx = Typed.collectFromScript unspentOutputs Collect
-            <> Constraints.mustValidateIn (TimeSlot.posixTimeRangeToSlotRange $ collectionRange cmp)
+            <> Constraints.mustValidateIn (collectionRange cmp)
     void $ submitTxConstraintsSpending inst unspentOutputs tx
 
 {- note [Transactions in the crowdfunding campaign]

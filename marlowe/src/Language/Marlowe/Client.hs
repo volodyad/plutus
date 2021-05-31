@@ -3,7 +3,6 @@
 {-# LANGUAGE DefaultSignatures     #-}
 {-# LANGUAGE DeriveAnyClass        #-}
 {-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE DerivingStrategies    #-}
 {-# LANGUAGE DerivingVia           #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -48,6 +47,7 @@ import           Ledger.Constraints
 import qualified Ledger.Constraints           as Constraints
 import qualified Ledger.Interval              as Interval
 import           Ledger.Scripts               (Validator, datumHash, unitRedeemer)
+import qualified Ledger.TimeSlot              as TimeSlot
 import qualified Ledger.Typed.Scripts         as Scripts
 import           Ledger.Typed.Tx              (TypedScriptTxOut (..), tyTxOutData)
 import qualified Ledger.Value                 as Val
@@ -56,7 +56,7 @@ import           Plutus.Contract.StateMachine (AsSMContractError (..), StateMach
                                                StateMachineInstance (..), Void, WaitingResult (..), getStates)
 import qualified Plutus.Contract.StateMachine as SM
 import qualified Plutus.Contracts.Currency    as Currency
-import qualified PlutusTx                     as PlutusTx
+import qualified PlutusTx
 import qualified PlutusTx.AssocMap            as AssocMap
 import qualified PlutusTx.Prelude             as P
 
@@ -532,7 +532,7 @@ mkMarloweStateMachineTransition params SM.State{ SM.stateData=MarloweData{..}, S
                         totalPayouts = P.foldMap (\(Payment _ v) -> v) txOutPayments
                         finalBalance = totalIncome P.- totalPayouts
                         in (outputsConstraints, finalBalance)
-            let range = Interval.interval minSlot maxSlot
+            let range = TimeSlot.slotRangeToPOSIXTimeRange $ Interval.interval minSlot maxSlot
             let constraints = inputsConstraints <> outputsConstraints <> mustValidateIn range
             if preconditionsOk
             then Just (constraints, SM.State marloweData finalBalance)
