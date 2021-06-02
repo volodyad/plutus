@@ -34,6 +34,7 @@ library
         Data.Text.Extras
         Data.UUID.Extras
         Plutus.Contract
+        Plutus.Contract.CardanoAPI
         Plutus.Contract.Effects.AwaitSlot
         Plutus.Contract.Effects.AwaitTxConfirmed
         Plutus.Contract.Effects.Instance
@@ -138,7 +139,8 @@ library
         random -any,
         unordered-containers -any,
         foldl -any,
-        streaming -any
+        streaming -any,
+        cardano-api -any
 
     if !(impl(ghcjs) || os(ghcjs))
         exposed-modules:
