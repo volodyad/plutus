@@ -266,11 +266,11 @@ Balances Carried Forward:
     Ada:      Lovelace:  8
 
 ==== Slot #3, Tx #0 ====
-TxId:       d93c4fb96c9892b432408a85c79c5cc8f7d2030771e8d02922cec6291b57e4b8
+TxId:       be8a7c79abc226b2e60e3dceedced9c791ef94ac53b6fb346ee328de3f490848
 Fee:        Ada:      Lovelace:  10
 Forge:      -
 Signatures  PubKey: d75a980182b10ab7d54bfed3c964073a0ee172f3...
-              Signature: 58402c4040f3f66ffbacd936925e3586a91ea470...
+              Signature: 58402b97477854c68b3895092c0547e40c692c59...
 Inputs:
   ---- Input 0 ----
   Destination:  PubKeyHash: 21fe31dfa154a261626bf854046fd2271b7bed4b... (Wallet 1)
@@ -295,15 +295,15 @@ Inputs:
 
 Outputs:
   ---- Output 0 ----
-  Destination:  PubKeyHash: 39f713d0a644253f04529421b9f51b9b08979d08... (Wallet 2)
-  Value:
-    d1970901878f8ae6aa6085a561b6fe3d4e7d98a8c032ac9b114177d553e5336a:  guess:    1
-
-  ---- Output 1 ----
   Destination:  PubKeyHash: 21fe31dfa154a261626bf854046fd2271b7bed4b... (Wallet 1)
   Value:
     Ada:      Lovelace:  99979015
     d1970901878f8ae6aa6085a561b6fe3d4e7d98a8c032ac9b114177d553e5336a:  guess:    0
+
+  ---- Output 1 ----
+  Destination:  PubKeyHash: 39f713d0a644253f04529421b9f51b9b08979d08... (Wallet 2)
+  Value:
+    d1970901878f8ae6aa6085a561b6fe3d4e7d98a8c032ac9b114177d553e5336a:  guess:    1
 
 
 Balances Carried Forward:
@@ -354,11 +354,11 @@ Balances Carried Forward:
     Ada:      Lovelace:  8
 
 ==== Slot #4, Tx #0 ====
-TxId:       f3c4fc8ecbb56918876a3defb333dcaf475e70ee0de8fef09702c3d781289c07
+TxId:       c2abd818dd24fc5f87ae02d011cb17ea41fce160fff2e764d871d61c6da1f037
 Fee:        Ada:      Lovelace:  22264
 Forge:      d1970901878f8ae6aa6085a561b6fe3d4e7d98a8c032ac9b114177d553e5336a:  guess:    0
 Signatures  PubKey: 3d4017c3e843895a92b70aa74d1b7ebc9c982ccf...
-              Signature: 5840d1a8a6038af413ffeffd6cb1c2759dc072c8...
+              Signature: 5840c68062c894bfb16ac128c77a2bacd1a67f24...
 Inputs:
   ---- Input 0 ----
   Destination:  Script: a1229b3c233b276767017e5f0682e323b695808699bc81d3aaf8695b3674b515
@@ -383,8 +383,8 @@ Inputs:
   Value:
     d1970901878f8ae6aa6085a561b6fe3d4e7d98a8c032ac9b114177d553e5336a:  guess:    1
   Source:
-    Tx:     d93c4fb96c9892b432408a85c79c5cc8f7d2030771e8d02922cec6291b57e4b8
-    Output #0
+    Tx:     be8a7c79abc226b2e60e3dceedced9c791ef94ac53b6fb346ee328de3f490848
+    Output #1
 
 
 
