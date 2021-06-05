@@ -70,7 +70,7 @@ import           Data.Text.Prettyprint.Doc      (Pretty (..), braces, colon, fil
 import           GHC.Generics                   (Generic)
 import           Ledger.Blockchain              (Block)
 import           Ledger.Slot                    (Slot (..))
-import           Plutus.Contract                (Contract (..))
+import           Plutus.Contract                (Contract (..), WalletAPIError)
 import           Plutus.Contract.Resumable      (Request (..), Requests (..), Response (..))
 import qualified Plutus.Contract.Resumable      as State
 import           Plutus.Contract.Schema         (Event, Handlers, Input, Output)
@@ -154,15 +154,17 @@ data EmulatorRuntimeError =
     | InstanceIdNotFound Wallet
     | JSONDecodingError String
     | GenericError String
-    deriving stock (Eq, Ord, Show, Generic)
+    | EmulatedWalletError WalletAPIError
+    deriving stock (Eq, Show, Generic)
     deriving anyclass (ToJSON, FromJSON)
 
 instance Pretty EmulatorRuntimeError where
     pretty = \case
-        ThreadIdNotFound i   -> "Thread ID not found:" <+> pretty i
-        InstanceIdNotFound w -> "Instance ID not found:" <+> pretty w
-        JSONDecodingError e  -> "JSON decoding error:" <+> pretty e
-        GenericError e       -> pretty e
+        ThreadIdNotFound i    -> "Thread ID not found:" <+> pretty i
+        InstanceIdNotFound w  -> "Instance ID not found:" <+> pretty w
+        JSONDecodingError e   -> "JSON decoding error:" <+> pretty e
+        GenericError e        -> pretty e
+        EmulatedWalletError e -> pretty e
 
 -- | A user-defined tag for a contract instance. Used to find the instance's
 --   log messages in the emulator log.
