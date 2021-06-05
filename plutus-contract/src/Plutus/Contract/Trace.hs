@@ -77,10 +77,9 @@ import           Ledger.Value                             (Value)
 
 import           Plutus.Trace.Emulator.Types              (EmulatedWalletEffects)
 import           Wallet.API                               (ChainIndexEffect)
-import           Wallet.Effects                           (ContractRuntimeEffect, WalletEffect)
+import           Wallet.Effects                           (ContractRuntimeEffect, NodeClientEffect, WalletEffect)
 import           Wallet.Emulator                          (EmulatorState, Wallet)
 import qualified Wallet.Emulator                          as EM
-import           Wallet.Emulator.LogMessages              (TxBalanceMsg)
 import qualified Wallet.Emulator.MultiAgent               as EM
 import           Wallet.Emulator.Notify                   (EmulatorNotifyLogMsg (..))
 import           Wallet.Types                             (ContractInstanceId, EndpointDescription (..),
@@ -119,7 +118,7 @@ handleSlotNotifications ::
     ( HasAwaitSlot s
     , Member (LogObserve (LogMessage Text)) effs
     , Member (LogMsg RequestHandlerLogMsg) effs
-    , Member WalletEffect effs
+    , Member NodeClientEffect effs
     )
     => RequestHandler effs (Handlers s) (Event s)
 handleSlotNotifications =
@@ -155,7 +154,6 @@ handlePendingTransactions ::
     , Member (LogMsg RequestHandlerLogMsg) effs
     , Member WalletEffect effs
     , Member ChainIndexEffect effs
-    , Member (LogMsg TxBalanceMsg) effs
     )
     => RequestHandler effs (Handlers s) (Event s)
 handlePendingTransactions =
@@ -192,8 +190,8 @@ handleAddressChangedAtQueries ::
     ( HasWatchAddress s
     , Member (LogObserve (LogMessage Text)) effs
     , Member (LogMsg RequestHandlerLogMsg) effs
-    , Member WalletEffect effs
     , Member ChainIndexEffect effs
+    , Member NodeClientEffect effs
     )
     => RequestHandler effs (Handlers s) (Event s)
 handleAddressChangedAtQueries =

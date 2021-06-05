@@ -56,9 +56,10 @@ import           Plutus.Contract.Effects.Instance         (OwnIdRequest)
 import           Plutus.Contract.Effects.UtxoAt           (UtxoAtAddress (..))
 import qualified Plutus.Contract.Wallet                   as Wallet
 import           Wallet.API                               (WalletAPIError)
-import           Wallet.Effects                           (ChainIndexEffect, ContractRuntimeEffect, WalletEffect)
+import           Wallet.Effects                           (ChainIndexEffect, ContractRuntimeEffect, NodeClientEffect,
+                                                           WalletEffect)
 import qualified Wallet.Effects
-import           Wallet.Emulator.LogMessages              (RequestHandlerLogMsg (..), TxBalanceMsg)
+import           Wallet.Emulator.LogMessages              (RequestHandlerLogMsg (..))
 import           Wallet.Types                             (AddressChangeRequest (..), AddressChangeResponse,
                                                            ContractInstanceId, Notification, NotificationError,
                                                            slotRange, targetSlot)
@@ -114,7 +115,7 @@ handleOwnPubKey =
 
 handleSlotNotifications ::
     forall effs.
-    ( Member WalletEffect effs
+    ( Member NodeClientEffect effs
     , Member (LogObserve (LogMessage Text)) effs
     , Member (LogMsg RequestHandlerLogMsg) effs
     )
@@ -122,7 +123,7 @@ handleSlotNotifications ::
 handleSlotNotifications =
     RequestHandler $ \targetSlot_ ->
         surroundDebug @Text "handleSlotNotifications" $ do
-            currentSlot <- Wallet.Effects.walletSlot
+            currentSlot <- Wallet.Effects.getClientSlot
             logDebug $ SlotNoficationTargetVsCurrent targetSlot_ currentSlot
             guard (currentSlot >= targetSlot_)
             pure currentSlot
@@ -132,7 +133,6 @@ handlePendingTransactions ::
     ( Member WalletEffect effs
     , Member (LogObserve (LogMessage Text)) effs
     , Member (LogMsg RequestHandlerLogMsg) effs
-    , Member (LogMsg TxBalanceMsg) effs
     , Member ChainIndexEffect effs
     )
     => RequestHandler effs UnbalancedTx (Either WalletAPIError Tx)
@@ -177,13 +177,13 @@ handleAddressChangedAtQueries ::
     forall effs.
     ( Member (LogObserve (LogMessage Text)) effs
     , Member (LogMsg RequestHandlerLogMsg) effs
-    , Member WalletEffect effs
     , Member ChainIndexEffect effs
+    , Member NodeClientEffect effs
     )
     => RequestHandler effs AddressChangeRequest AddressChangeResponse
 handleAddressChangedAtQueries = RequestHandler $ \req ->
     surroundDebug @Text "handleAddressChangedAtQueries" $ do
-        current <- Wallet.Effects.walletSlot
+        current <- Wallet.Effects.getClientSlot
         let target = targetSlot req
         logDebug $ HandleAddressChangedAt current (slotRange req)
         -- If we ask the chain index for transactions that were confirmed in
