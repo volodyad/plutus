@@ -43,7 +43,7 @@ import           Plutus.PAB.Events.Contract              (ContractInstanceId (..
                                                           ContractPABResponse (..))
 import qualified Plutus.PAB.Events.Contract              as Events.Contract
 import           Plutus.PAB.Events.ContractInstanceState (PartiallyDecodedResponse)
-import           Wallet.Effects                          (ChainIndexEffect, WalletEffect)
+import           Wallet.Effects                          (ChainIndexEffect, NodeClientEffect, WalletEffect)
 import           Wallet.Emulator.LogMessages             (TxBalanceMsg)
 import           Wallet.Emulator.Types                   (Wallet)
 import           Wallet.Types                            (NotificationError)
@@ -76,7 +76,6 @@ processWriteTxRequests ::
     , Member WalletEffect effs
     , Member (LogObserve (LogMessage Text.Text)) effs
     , Member (LogMsg RequestHandlerLogMsg) effs
-    , Member (LogMsg TxBalanceMsg) effs
     )
     => RequestHandler effs ContractPABRequest ContractPABResponse
 processWriteTxRequests =
@@ -87,8 +86,8 @@ processWriteTxRequests =
 processAddressChangedAtRequests ::
     forall effs.
     ( Member (LogObserve (LogMessage Text.Text)) effs
-    , Member WalletEffect effs
     , Member ChainIndexEffect effs
+    , Member NodeClientEffect effs
     , Member (LogMsg RequestHandlerLogMsg) effs
     )
     => RequestHandler effs ContractPABRequest ContractPABResponse

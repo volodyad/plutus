@@ -49,8 +49,9 @@ import           Plutus.PAB.Instances                    ()
 import           Plutus.PAB.Monitoring.MonadLoggerBridge (MonadLoggerMsg (..))
 import           Plutus.PAB.ParseStringifiedJSON         (UnStringifyJSONLog (..))
 import           Plutus.PAB.Types                        (PABError)
+import           Wallet.Emulator.LogMessages             (TxBalanceMsg)
 import           Wallet.Emulator.MultiAgent              (EmulatorEvent)
-import           Wallet.Emulator.Wallet                  (WalletEvent (..))
+import           Wallet.Emulator.Wallet                  (Wallet, WalletEvent (..))
 
 data AppMsg t =
     InstalledContractsMsg
@@ -173,6 +174,7 @@ data PABMultiAgentMsg t =
     | UserLog T.Text
     | StartingPABBackendServer Int
     | StartingMetadataServer Int
+    | WalletBalancingMsg Wallet TxBalanceMsg
     deriving stock Generic
 
 instance (StructuredLog (ContractDef t), ToJSON (ContractDef t)) => ToObject (PABMultiAgentMsg t) where
@@ -187,6 +189,7 @@ instance (StructuredLog (ContractDef t), ToJSON (ContractDef t)) => ToObject (PA
         UserLog t                  -> toObject v t
         StartingPABBackendServer i -> mkObjectStr "starting backend server" (Tagged @"port" i)
         StartingMetadataServer i   -> mkObjectStr "starting backend server" (Tagged @"port" i)
+        WalletBalancingMsg w m     -> mkObjectStr "balancing" (Tagged @"wallet" w, Tagged @"message" m)
 
 deriving stock instance (Show (ContractDef t)) => Show (PABMultiAgentMsg t)
 deriving anyclass instance (ToJSON (ContractDef t)) => ToJSON (PABMultiAgentMsg t)
@@ -206,6 +209,7 @@ instance Pretty (ContractDef t) => Pretty (PABMultiAgentMsg t) where
             "Starting PAB backend server on port:" <+> pretty port
         StartingMetadataServer port ->
             "Starting metadata server on port:" <+> pretty port
+        WalletBalancingMsg w m -> pretty w <> colon <+> pretty m
 
 data CoreMsg t =
     Installing (ContractDef t)

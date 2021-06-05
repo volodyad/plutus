@@ -54,7 +54,7 @@ import           Plutus.PAB.Core.ContractInstance.RequestHandlers (ContractInsta
                                                                    processWriteTxRequests)
 
 import           Wallet.Effects                                   (ChainIndexEffect, ContractRuntimeEffect,
-                                                                   WalletEffect)
+                                                                   NodeClientEffect, WalletEffect)
 import           Wallet.Emulator.LogMessages                      (TxBalanceMsg)
 
 import           Plutus.Contract                                  (AddressChangeRequest (..))
@@ -133,9 +133,9 @@ stmRequestHandler ::
     forall effs.
     ( Member ChainIndexEffect effs
     , Member WalletEffect effs
+    , Member NodeClientEffect effs
     , Member (LogMsg RequestHandlerLogMsg) effs
     , Member (LogObserve (LogMessage Text.Text)) effs
-    , Member (LogMsg TxBalanceMsg) effs
     , Member (Reader ContractInstanceId) effs
     , Member (Reader BlockchainEnv) effs
     , Member (Reader InstanceState) effs
@@ -190,6 +190,7 @@ type AppBackendConstraints t m effs =
     , Member ChainIndexEffect effs
     , Member WalletEffect effs
     , Member ContractRuntimeEffect effs
+    , Member NodeClientEffect effs
     , Member (LogMsg RequestHandlerLogMsg) effs
     , Member (LogObserve (LogMessage Text.Text)) effs
     , Member (LogMsg TxBalanceMsg) effs
@@ -260,10 +261,10 @@ respondToRequestsSTM ::
     forall t effs.
     ( Member ChainIndexEffect effs
     , Member WalletEffect effs
+    , Member NodeClientEffect effs
     , Member (LogMsg RequestHandlerLogMsg) effs
     , Member (LogObserve (LogMessage Text.Text)) effs
     , Member (LogMsg (ContractInstanceMsg t)) effs
-    , Member (LogMsg TxBalanceMsg) effs
     , Member (Reader ContractInstanceId) effs
     , Member (Reader BlockchainEnv) effs
     , Member (Reader InstanceState) effs
