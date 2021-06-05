@@ -103,6 +103,9 @@ library
         plutus-tx -any,
         freer-extras -any,
     build-depends:
+        cardano-api -any,
+        cardano-ledger-core -any,
+    build-depends:
         aeson >= 1.5.2,
         base >=4.7 && <5,
         containers -any,
@@ -140,7 +143,6 @@ library
         unordered-containers -any,
         foldl -any,
         streaming -any,
-        cardano-api -any
 
     if !(impl(ghcjs) || os(ghcjs))
         exposed-modules:
