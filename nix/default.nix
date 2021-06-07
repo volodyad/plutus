@@ -33,9 +33,17 @@ let
     config = haskellNix.config // config;
   };
 
-  plutus = import ./pkgs { inherit pkgs checkMaterialization enableHaskellProfiling sources; };
+  nativePkgs = import sources.nixpkgs {
+    overlays = extraOverlays ++ overlays;
+    config = haskellNix.config // config;
+  };
+
+  nativePlutus = if system == builtins.currentSystem && crossSystem == null
+                 then null
+                 else import ./pkgs { pkgs = nativePkgs; inherit checkMaterialization enableHaskellProfiling sources; };
+  plutus = import ./pkgs { inherit pkgs checkMaterialization enableHaskellProfiling sources nativePlutus; };
 
 in
 {
-  inherit pkgs plutus sources;
+  inherit pkgs nativePlutus plutus sources;
 }

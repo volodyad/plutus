@@ -25,6 +25,8 @@ packages: doc
           prettyprinter-configurable
           quickcheck-dynamic
           web-ghc
+          stubs/*
+          contrib/*
 
 -- We never, ever, want this.
 write-ghc-environment-files: never
@@ -48,6 +50,15 @@ allow-newer:
            -- The following two dependencies are needed by plutus.
            , eventful-sql-common:persistent
            , eventful-sql-common:persistent-template
+           , stm:base
+           , cardano-binary:recursion-schemes
+           , jsaddle:ghcjs-base
+           , ghcjs-base:primitive
+           , ghcjs-base:time
+           , ghcjs-base:hashable
+           , ghcjs-base:aeson
+           , servant-foreign:lens
+           , servant-client:http-client
 
 constraints:
   -- aws-lambda-haskell-runtime-wai doesn't compile with newer versions
@@ -80,7 +91,7 @@ source-repository-package
 source-repository-package
   type: git
   location: https://github.com/input-output-hk/cardano-base
-  tag: 4251c0bb6e4f443f00231d28f5f70d42876da055
+  tag: 4f627b3797ba4c852e4c86fb5383d35600423205
   subdir:
     binary
     binary/test
@@ -167,3 +178,14 @@ package small-steps
 
 package small-steps-test
   tests: False
+
+package byron-spec-chain
+  tests: False
+
+-- GHCJS specific stuff...
+source-repository-package
+   type: git
+   location: https://github.com/hamishmack/foundation
+   tag: 421e8056fabf30ef2f5b01bb61c6880d0dfaa1c8
+   --sha256: 0cbsj3dyycykh0lcnsglrzzh898n2iydyw8f2nwyfvfnyx6ac2im
+   subdir: foundation

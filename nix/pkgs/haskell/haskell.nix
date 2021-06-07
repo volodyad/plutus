@@ -1,7 +1,8 @@
 ############################################################################
 # Builds Haskell packages with Haskell.nix
 ############################################################################
-{ lib
+{ pkgs
+, lib
 , stdenv
 , rPackages
 , haskell-nix
@@ -16,11 +17,28 @@
   # Whether to set the `defer-plugin-errors` flag on those packages that need
   # it. If set to true, we will also build the haddocks for those packages.
 , deferPluginErrors
+, nativePlutus ? null
 }:
 let
   r-packages = with rPackages; [ R tidyverse dplyr stringr MASS plotly shiny shinyjs purrr ];
   project = haskell-nix.cabalProject' {
     inherit compiler-nix-name;
+
+    cabalProjectLocal = if (nativePlutus == null)
+    then ''
+      -- packages: ${pkgs.pkgsCross.ghcjs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.configured-src}
+
+
+      source-repository-package
+        type: git
+        location: https://github.com/ghcjs/ghcjs.git
+        tag: 6f20f45e384e4907cbf11ec7c258e456c4f0f4d7
+        --sha256: 098n3nabc9dgsfh0mznpkaxhbwmsp5rx5wcvx4411k631lglkyk2
+
+      allow-newer: ghcjs:base16-bytestring,
+                   ghcjs:aeson
+    '' else "";
+
     # This is incredibly difficult to get right, almost everything goes wrong, see https://github.com/input-output-hk/haskell.nix/issues/496
     src = let root = ../../../.; in
       haskell-nix.haskellLib.cleanSourceWith {
@@ -37,13 +55,13 @@ let
     # See https://github.com/input-output-hk/nix-tools/issues/97
     # materialized =
     #   if stdenv.hostPlatform.isUnix then ./materialized-unix
-    #   else builtins.error "Don't have materialized files for this platform";
+    #   else __trace "Don't have materialized files for this platform ${stdenv.hostPlatform.config}" null;
     # If true, we check that the generated files are correct. Set in the CI so we don't make mistakes.
     inherit checkMaterialization;
     sha256map = {
       "https://github.com/shmish111/purescript-bridge.git"."6a92d7853ea514be8b70bab5e72077bf5a510596" = "13j64vv116in3c204qsl1v0ajphac9fqvsjp7x3zzfr7n7g61drb";
       "https://github.com/shmish111/servant-purescript.git"."a76104490499aa72d40c2790d10e9383e0dbde63" = "11nxxmi5bw66va7psvrgrw7b7n85fvqgfp58yva99w3v9q3a50v9";
-      "https://github.com/input-output-hk/cardano-base"."4251c0bb6e4f443f00231d28f5f70d42876da055" = "02a61ymvx054pcdcgvg5qj9kpybiajg993nr22iqiya196jmgciv";
+      "https://github.com/input-output-hk/cardano-base"."4f627b3797ba4c852e4c86fb5383d35600423205" = "0xmbk89fzji07y9i05xbiczv8ppy1ffpnm6ym1pypl6cf3kl2b7r";
       "https://github.com/input-output-hk/cardano-crypto.git"."f73079303f663e028288f9f4a9e08bcca39a923e" = "1n87i15x54s0cjkh3nsxs4r1x016cdw1fypwmr68936n3xxsjn6q";
       "https://github.com/input-output-hk/cardano-ledger-specs"."097890495cbb0e8b62106bcd090a5721c3f4b36f" = "0i3y9n0rsyarvhfqzzzjccqnjgwb9fbmbs6b7vj40afjhimf5hcj";
       "https://github.com/input-output-hk/cardano-prelude"."ee4e7b547a991876e6b05ba542f4e62909f4a571" = "0dg6ihgrn5mgqp95c4f11l6kh9k3y75lwfqf47hdp554w7wyvaw6";
@@ -52,9 +70,45 @@ let
       "https://github.com/input-output-hk/ouroboros-network"."6cb9052bde39472a0555d19ade8a42da63d3e904" = "0rz4acz15wda6yfc7nls6g94gcwg2an5zibv0irkxk297n76gkmg";
     };
     modules = [
+        # { nonReinstallablePkgs = [
+        #   "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base"
+        #   "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
+        #   # ghcjs custom packages
+        #   "ghcjs-prim" "ghcjs-th"
+        #   "ghc-boot"
+        #   "ghc" "Win32" "array" "binary" "bytestring" "containers"
+        #   "directory" "filepath" "ghc-boot" "ghc-compact" "ghc-prim"
+        #   # "ghci" "haskeline"
+        #   "hpc"
+        #   "mtl" "parsec" "process" "text" "time" "transformers"
+        #   "unix" "xhtml"
+        #   # "stm" "terminfo"
+        # ]; }
       {
         reinstallableLibGhc = false;
         packages = {
+
+          ghcjs.components.library.build-tools = let alex = pkgs.haskell-nix.tool compiler-nix-name "alex" {
+            index-state = pkgs.haskell-nix.internalHackageIndexState;
+            version = "3.2.5"; }; in [ alex ];
+          ghcjs.flags.use-host-template-haskell = true;
+
+          plutus-use-cases.ghcOptions = if (nativePlutus != null)
+                                        then (let attr = nativePlutus.haskell.projectPackages.plutus-tx-plugin.components.library;
+                                         in [ "-host-package-db ${attr.passthru.configFiles}/${attr.passthru.configFiles.packageCfgDir}" "-host-package-db ${attr}/package.conf.d" "-Werror" "-v"])
+                                        else __trace "nativePlutus is null" [];
+
+
+          plutus-ledger.components.library.build-tools = if (nativePlutus != null) then [ pkgs.pkgsCross.ghcjs.buildPackages.haskell-nix.compiler.${compiler-nix-name}.buildGHC ] else [];
+          plutus-ledger.ghcOptions = if (nativePlutus != null)
+                                        then (let attr = nativePlutus.haskell.projectPackages.plutus-tx-plugin.components.library;
+                                         in [ "-host-package-db ${attr.passthru.configFiles}/${attr.passthru.configFiles.packageCfgDir}"
+                                              "-host-package-db ${attr}/package.conf.d"
+                                              "-Werror" ])
+                                        else __trace "nativePlutus is null" [];
+
+
+          Cabal.patches = [ ../../patches/cabal.patch ];
           # See https://github.com/input-output-hk/plutus/issues/1213 and
           # https://github.com/input-output-hk/plutus/pull/2865.
           marlowe.doHaddock = deferPluginErrors;
@@ -127,14 +181,14 @@ let
           # FIXME: has warnings
           #plutus-metatheory.package.ghcOptions = "-Werror";
           plutus-contract.ghcOptions = [ "-Werror" ];
-          plutus-ledger.ghcOptions = [ "-Werror" ];
+          # plutus-ledger.ghcOptions = [ "-Werror" ];
           plutus-ledger-api.ghcOptions = [ "-Werror" ];
           plutus-playground-server.ghcOptions = [ "-Werror" ];
           plutus-pab.ghcOptions = [ "-Werror" ];
           plutus-tx.ghcOptions = [ "-Werror" ];
           plutus-tx-plugin.ghcOptions = [ "-Werror" ];
           plutus-doc.ghcOptions = [ "-Werror" ];
-          plutus-use-cases.ghcOptions = [ "-Werror" ];
+          # plutus-use-cases.ghcOptions = [ "-Werror" ];
 
           # External package settings
 
