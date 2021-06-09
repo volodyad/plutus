@@ -24,6 +24,7 @@ data RequestHandlerLogMsg =
     | HandleAddressChangedAt Slot SlotRange
     | HandleTxFailed WalletAPIError
     | UtxoAtFailed Address
+    | MSG String
     deriving stock (Eq, Show, Generic)
     deriving anyclass (ToJSON, FromJSON)
 
@@ -39,6 +40,7 @@ instance Pretty RequestHandlerLogMsg where
                 <+> "Current:"
                 <+> pretty current
         UtxoAtFailed addr -> "UtxoAt failed:" <+> pretty addr
+        MSG s -> "MSG" <+> pretty s
 
 data TxBalanceMsg =
     BalancingUnbalancedTx UnbalancedTx

@@ -51,7 +51,7 @@ import           Plutus.Contract.Effects              (PABReq, PABResp, matches)
 import           Plutus.Contract.Resumable            (Request (..), Response (..))
 import qualified Plutus.Contract.Resumable            as State
 import           Plutus.Contract.Trace                (handleBlockchainQueries)
-import           Plutus.Contract.Trace.RequestHandler (RequestHandler (..), RequestHandlerLogMsg, tryHandler,
+import           Plutus.Contract.Trace.RequestHandler (RequestHandler (..), RequestHandlerLogMsg (..), tryHandler,
                                                        wrapHandler)
 import           Plutus.Contract.Types                (ResumableResult (..), lastLogs, requests, resumableResult)
 import           Plutus.Trace.Emulator.Types          (ContractConstraints, ContractHandle (..),
@@ -267,9 +267,14 @@ respondToEvent ::
     )
     => PABResp
     -> Eff effs (Maybe (Response PABResp))
-respondToEvent e =
+respondToEvent e = do
+    logInfo $ ContractLog $ JSON.toJSON $ ("respondToEvent:" :: String)
+    hks <- getHooks @w @s @e
+    logInfo $ ContractLog $ JSON.toJSON hks
     respondToRequest @w @s @e $ RequestHandler $ \h -> do
+        logInfo $ MSG $ "matching " <> show h <> "; " <> show e
         guard $ h `matches` e
+        logInfo $ MSG "matched!!!"
         pure e
 
 -- | Inspect the open requests of a contract instance,
