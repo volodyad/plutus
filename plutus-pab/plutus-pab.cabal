@@ -121,9 +121,8 @@ library
         plutus-tx -any,
         plutus-contract -any,
         playground-common -any,
-        plutus-use-cases -any
-    if !(impl(ghcjs) || os(ghcjs) || os(windows))
-        build-depends: plutus-tx-plugin -any
+        plutus-use-cases -any,
+        plutus-tx-plugin -any
     build-depends:
         QuickCheck -any,
         aeson -any,
