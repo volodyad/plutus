@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns        #-}
 {-# LANGUAGE NoImplicitPrelude     #-}
+{-# LANGUAGE NumericUnderscores    #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TemplateHaskell       #-}
@@ -35,7 +36,7 @@ import           Plutus.Contract          hiding (when)
 import qualified Plutus.Contract.Typed.Tx as Typed
 import qualified PlutusTx
 import           PlutusTx.Prelude         hiding (Semigroup (..), fold)
-import           Prelude                  (Semigroup (..))
+import           Prelude                  as Haskell (Semigroup (..), show)
 import           Wallet.Emulator.Types    (walletPubKey)
 
 {- |
@@ -128,22 +129,22 @@ validate VestingParams{vestingTranche1, vestingTranche2, vestingOwner} () () ctx
             -- please, potentially saving one transaction.
 
 data Vesting
-instance Scripts.ScriptType Vesting where
+instance Scripts.ValidatorTypes Vesting where
     type instance RedeemerType Vesting = ()
     type instance DatumType Vesting = ()
 
 vestingScript :: VestingParams -> Validator
-vestingScript = Scripts.validatorScript . scriptInstance
+vestingScript = Scripts.validatorScript . typedValidator
 
-scriptInstance :: VestingParams -> Scripts.ScriptInstance Vesting
-scriptInstance = Scripts.validatorParam @Vesting
+typedValidator :: VestingParams -> Scripts.TypedValidator Vesting
+typedValidator = Scripts.mkTypedValidatorParam @Vesting
     $$(PlutusTx.compile [|| validate ||])
     $$(PlutusTx.compile [|| wrap ||])
     where
         wrap = Scripts.wrapValidator
 
 contractAddress :: VestingParams -> Ledger.Address
-contractAddress = Scripts.scriptAddress . scriptInstance
+contractAddress = Scripts.validatorAddress . typedValidator
 
 vestingContract :: VestingParams -> Contract () VestingSchema T.Text ()
 vestingContract vesting = vest `select` retrieve
@@ -166,7 +167,7 @@ vestFundsC
     -> Contract () s T.Text ()
 vestFundsC vesting = do
     let tx = payIntoContract (totalAmount vesting)
-    void $ submitTxConstraints (scriptInstance vesting) tx
+    void $ submitTxConstraints (typedValidator vesting) tx
 
 data Liveness = Alive | Dead
 
@@ -179,8 +180,8 @@ retrieveFundsC
     -> Value
     -> Contract () s T.Text Liveness
 retrieveFundsC vesting payment = do
-    let inst = scriptInstance vesting
-        addr = Scripts.scriptAddress inst
+    let inst = typedValidator vesting
+        addr = Scripts.validatorAddress inst
     nextSlot <- awaitSlot 0
     unspentOutputs <- utxoAt addr
     let
@@ -223,10 +224,10 @@ endpoints = vestingContract vestingParams
         VestingParams {vestingTranche1, vestingTranche2, vestingOwner}
     vestingTranche1 =
         VestingTranche
-            {vestingTrancheDate = Slot 20, vestingTrancheAmount = Ada.lovelaceValueOf 5}
+            {vestingTrancheDate = Slot 20, vestingTrancheAmount = Ada.lovelaceValueOf 50_000_000}
     vestingTranche2 =
         VestingTranche
-            {vestingTrancheDate = Slot 40, vestingTrancheAmount = Ada.lovelaceValueOf 3}
+            {vestingTrancheDate = Slot 40, vestingTrancheAmount = Ada.lovelaceValueOf 30_000_000}
 
 mkSchemaDefinitions ''VestingSchema
 

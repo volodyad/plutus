@@ -5,9 +5,9 @@
 module PlutusCore.Evaluation.Machine.ExBudgetingDefaults
     ( defaultBuiltinsRuntime
     , defaultCekCostModel
-    , defaultCekCostModelParams
     , defaultCekMachineCosts
     , defaultCekParameters
+    , defaultCostModelParams
     , unitCekMachineCosts
     , unitCekParameters
     , defaultBuiltinCostModel
@@ -19,13 +19,12 @@ import           Data.Aeson.THReader
 
 import           PlutusCore.Constant
 
-import           PlutusCore.Builtins
+import           PlutusCore.Default
 import           PlutusCore.Evaluation.Machine.BuiltinCostModel
 import           PlutusCore.Evaluation.Machine.CostModelInterface
 import           PlutusCore.Evaluation.Machine.ExBudget                   ()
 import           PlutusCore.Evaluation.Machine.ExMemory                   ()
 import           PlutusCore.Evaluation.Machine.MachineParameters
-import           PlutusCore.Universe
 
 import           UntypedPlutusCore.Evaluation.Machine.Cek.CekMachineCosts
 import           UntypedPlutusCore.Evaluation.Machine.Cek.Internal
@@ -48,13 +47,14 @@ defaultCekMachineCosts :: CekMachineCosts
 defaultCekMachineCosts =
   $$(readJSONFromFile "cost-model/data/cekMachineCosts.json")
 
-defaultCekCostModel :: CostModel CekMachineCosts
+defaultCekCostModel :: CostModel CekMachineCosts BuiltinCostModel
 defaultCekCostModel = CostModel defaultCekMachineCosts defaultBuiltinCostModel
 --- defaultCekMachineCosts is CekMachineCosts
 
--- | The default cost model data.
-defaultCekCostModelParams :: Maybe CostModelParams
-defaultCekCostModelParams = extractCostModelParams defaultCekCostModel
+-- | The default cost model data.  This is exposed to the ledger, so let's not
+-- confuse anybody by mentioning the CEK machine
+defaultCostModelParams :: Maybe CostModelParams
+defaultCostModelParams = extractCostModelParams defaultCekCostModel
 
 defaultCekParameters :: MachineParameters CekMachineCosts CekValue DefaultUni DefaultFun
 defaultCekParameters = toMachineParameters defaultCekCostModel
@@ -64,4 +64,3 @@ unitCekParameters = toMachineParameters (CostModel unitCekMachineCosts defaultBu
 
 defaultBuiltinsRuntime :: HasConstantIn DefaultUni term => BuiltinsRuntime DefaultFun term
 defaultBuiltinsRuntime = toBuiltinsRuntime defaultBuiltinCostModel
-

@@ -24,7 +24,7 @@ module Plutus.Contracts.MultiSigStateMachine(
     , Payment(..)
     , State
     , mkValidator
-    , scriptInstance
+    , typedValidator
     , MultiSigError(..)
     , MultiSigSchema
     , contract
@@ -52,6 +52,8 @@ import qualified Plutus.Contract.StateMachine as SM
 import qualified PlutusTx
 import           PlutusTx.Prelude             hiding (Applicative (..))
 
+import qualified Prelude                      as Haskell
+
 -- $multisig
 --   The n-out-of-m multisig contract works like a joint account of
 --   m people, requiring the consent of n people for any payments.
@@ -75,7 +77,7 @@ data Payment = Payment
     , paymentDeadline  :: Slot
     -- ^ Time until the required amount of signatures has to be collected.
     }
-    deriving stock (Show, Generic)
+    deriving stock (Haskell.Show, Generic)
     deriving anyclass (ToJSON, FromJSON)
 
 instance Eq Payment where
@@ -98,7 +100,7 @@ data MSState =
 
     | CollectingSignatures Payment [PubKeyHash]
     -- ^ A payment has been proposed and is awaiting signatures.
-    deriving stock (Show, Generic)
+    deriving stock (Haskell.Show, Generic)
     deriving anyclass (ToJSON, FromJSON)
 
 instance Eq MSState where
@@ -122,13 +124,13 @@ data Input =
 
     | Pay
     -- ^ Make the payment.
-    deriving stock (Show, Generic)
+    deriving stock (Haskell.Show, Generic)
     deriving anyclass (ToJSON, FromJSON)
 
 data MultiSigError =
     MSContractError ContractError
     | MSStateMachineError SM.SMContractError
-    deriving stock (Show, Generic)
+    deriving stock (Haskell.Show, Generic)
     deriving anyclass (ToJSON, FromJSON)
 makeClassyPrisms ''MultiSigError
 
@@ -242,15 +244,15 @@ machine params = SM.mkStateMachine Nothing (transition params) isFinal where
 mkValidator :: Params -> Scripts.ValidatorType MultiSigSym
 mkValidator params = SM.mkValidator $ machine params
 
-scriptInstance :: Params -> Scripts.ScriptInstance MultiSigSym
-scriptInstance = Scripts.validatorParam @MultiSigSym
+typedValidator :: Params -> Scripts.TypedValidator MultiSigSym
+typedValidator = Scripts.mkTypedValidatorParam @MultiSigSym
     $$(PlutusTx.compile [|| mkValidator ||])
     $$(PlutusTx.compile [|| wrap ||])
     where
         wrap = Scripts.wrapValidator
 
 client :: Params -> SM.StateMachineClient MSState Input
-client params = SM.mkStateMachineClient $ SM.StateMachineInstance (machine params) (scriptInstance params)
+client params = SM.mkStateMachineClient $ SM.StateMachineInstance (machine params) (typedValidator params)
 
 contract ::
     ( AsContractError e

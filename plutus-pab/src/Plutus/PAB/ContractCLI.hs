@@ -38,7 +38,7 @@ import           Control.Monad.Freer               (Eff, LastMember, Member, int
 import           Control.Monad.Freer.Error         (Error, runError, throwError)
 import qualified Control.Monad.Freer.Extras.Modify as Modify
 import           Control.Monad.IO.Class            (liftIO)
-import           Data.Aeson                        (FromJSON, ToJSON)
+import           Data.Aeson                        (FromJSON, ToJSON (toJSON))
 import qualified Data.Aeson                        as JSON
 import qualified Data.Aeson.Encode.Pretty          as JSON
 import           Data.Bifunctor                    (bimap)
@@ -114,6 +114,7 @@ runCliCommand :: forall w s s2.
        , Forall (Input s) ToJSON
        , EndpointToSchema (s .\\ s2)
        , ToJSON w
+       , FromJSON w
        , Monoid w
        )
     => Proxy s2
@@ -134,6 +135,7 @@ runUpdate :: forall w s.
     , Forall (Output s) ToJSON
     , Forall (Input s) ToJSON
     , ToJSON w
+    , FromJSON w
     , Monoid w
     )
     => Contract w s Text ()
@@ -142,7 +144,7 @@ runUpdate :: forall w s.
 runUpdate contract arg = either (throwError @[BS.ByteString] . return) pure $
     bimap
         (BSL.toStrict . JSON.encodePretty . Text.pack)
-        (BSL.toStrict . JSON.encodePretty . ContractState.insertAndUpdateContract contract)
+        (BSL.toStrict . JSON.encodePretty . ContractState.mapE toJSON . ContractState.mapW toJSON . bimap toJSON toJSON . ContractState.insertAndUpdateContract contract)
         (JSON.eitherDecode $ BSL.fromStrict arg)
 
 -- | Make a command line app with a schema that includes all of the contract's
@@ -154,6 +156,7 @@ commandLineApp :: forall w s.
        , Forall (Output s) ToJSON
        , EndpointToSchema (s .\\ BlockchainActions)
        , ToJSON w
+       , FromJSON w
        , Monoid w
        )
     => Contract w s Text ()
@@ -169,12 +172,13 @@ commandLineApp' :: forall w s s2.
        , Forall (Output s) ToJSON
        , EndpointToSchema (s .\\ s2)
        , ToJSON w
+       , FromJSON w
        , Monoid w
        )
     => Proxy s2
     -> Contract w s Text ()
     -> IO ()
-commandLineApp' p schema = runPromptIO (contractCliApp  p schema)
+commandLineApp' p schema = runPromptIO (contractCliApp p schema)
 
 contractCliApp :: forall w s s2.
        ( AllUniqueLabels (Input s)
@@ -183,6 +187,7 @@ contractCliApp :: forall w s s2.
        , Forall (Output s) ToJSON
        , EndpointToSchema (s .\\ s2)
        , ToJSON w
+       , FromJSON w
        , Monoid w
        )
     => Proxy s2

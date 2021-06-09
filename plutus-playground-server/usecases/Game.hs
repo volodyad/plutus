@@ -33,7 +33,7 @@ import           Playground.Contract
 import           Plutus.Contract
 import qualified PlutusTx              as PlutusTx
 import           PlutusTx.Prelude      hiding (pure, (<$>))
-import qualified Prelude
+import qualified Prelude               as Haskell
 
 ------------------------------------------------------------
 
@@ -51,24 +51,24 @@ type GameSchema =
         .\/ Endpoint "guess" GuessParams
 
 data Game
-instance Scripts.ScriptType Game where
+instance Scripts.ValidatorTypes Game where
     type instance RedeemerType Game = ClearString
     type instance DatumType Game = HashedString
 
-gameInstance :: Scripts.ScriptInstance Game
-gameInstance = Scripts.validator @Game
+gameInstance :: Scripts.TypedValidator Game
+gameInstance = Scripts.mkTypedValidator @Game
     $$(PlutusTx.compile [|| validateGuess ||])
     $$(PlutusTx.compile [|| wrap ||]) where
         wrap = Scripts.wrapValidator @HashedString @ClearString
 
 -- create a data script for the guessing game by hashing the string
 -- and lifting the hash to its on-chain representation
-hashString :: String -> HashedString
+hashString :: Haskell.String -> HashedString
 hashString = HashedString . sha2_256 . C.pack
 
 -- create a redeemer script for the guessing game by lifting the
 -- string to its on-chain representation
-clearString :: String -> ClearString
+clearString :: Haskell.String -> ClearString
 clearString = ClearString . C.pack
 
 -- | The validation function (Datum -> Redeemer -> ScriptContext -> Bool)
@@ -85,17 +85,17 @@ gameAddress = Ledger.scriptAddress gameValidator
 
 -- | Parameters for the "lock" endpoint
 data LockParams = LockParams
-    { secretWord :: String
+    { secretWord :: Haskell.String
     , amount     :: Value
     }
-    deriving stock (Prelude.Eq, Prelude.Show, Generic)
+    deriving stock (Haskell.Eq, Haskell.Show, Generic)
     deriving anyclass (FromJSON, ToJSON, ToSchema, ToArgument)
 
 --  | Parameters for the "guess" endpoint
 newtype GuessParams = GuessParams
-    { guessWord :: String
+    { guessWord :: Haskell.String
     }
-    deriving stock (Prelude.Eq, Prelude.Show, Generic)
+    deriving stock (Haskell.Eq, Haskell.Show, Generic)
     deriving anyclass (FromJSON, ToJSON, ToSchema, ToArgument)
 
 -- | The "lock" contract endpoint. See note [Contract endpoints]

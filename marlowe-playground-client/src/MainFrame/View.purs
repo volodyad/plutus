@@ -9,7 +9,7 @@ import Effect.Aff.Class (class MonadAff)
 import Gists.Types (GistAction(..))
 import Halogen (ComponentHTML)
 import Halogen.ActusBlockly as ActusBlockly
-import Halogen.Classes (aHorizontal, active, bgDark, flex, flexCol, fontSemibold, fullHeight, fullWidth, group, hide, justifyBetween, noMargins, paddingLeft, paddingX, smallPaddingLeft, smallPaddingRight, smallPaddingY, smallSpaceBottom, spaceRight, text3xl, textLg, textWhite, uppercase, vl)
+import Halogen.Classes (aHorizontal, active, bgGrayDark, flex, flexCol, fontSemibold, fullHeight, fullWidth, group, hidden, justifyBetween, noMargins, paddingLeft, paddingX, smallPaddingLeft, smallPaddingRight, smallPaddingY, smallSpaceBottom, spaceRight, text3xl, textLg, textWhite, uppercase, vl)
 import Halogen.Extra (renderSubmodule)
 import Halogen.HTML (ClassName(ClassName), HTML, a, div, div_, footer, h1, h2, header, main, section, slot, span, text)
 import Halogen.HTML.Events (onClick)
@@ -20,13 +20,12 @@ import HaskellEditor.View (otherActions, render) as HaskellEditor
 import Home as Home
 import Icons (Icon(..), icon)
 import JavascriptEditor.View as JSEditor
-import MainFrame.Types (Action(..), ChildSlots, ModalView(..), State, View(..), _actusBlocklySlot, _authStatus, _blocklyEditorState, _contractMetadata, _createGistResult, _gistId, _hasUnsavedChanges, _haskellState, _javascriptState, _marloweEditorState, _projectName, _simulationState, _view, _walletSlot, hasGlobalLoading)
+import MainFrame.Types (Action(..), ChildSlots, ModalView(..), State, View(..), _actusBlocklySlot, _authStatus, _blocklyEditorState, _contractMetadata, _createGistResult, _gistId, _hasUnsavedChanges, _haskellState, _javascriptState, _marloweEditorState, _projectName, _simulationState, _view, hasGlobalLoading)
 import Marlowe.ActusBlockly as AMB
 import MarloweEditor.View as MarloweEditor
 import Modal.View (modal)
 import Network.RemoteData (_Loading, _Success)
 import SimulationPage.View as Simulation
-import Wallet as Wallet
 
 render ::
   forall m.
@@ -36,7 +35,7 @@ render ::
 render state =
   div [ class_ (ClassName "site-wrap") ]
     ( [ header [ classes [ noMargins, flex, flexCol ] ]
-          [ div [ classes [ aHorizontal, fullWidth, bgDark, paddingX, smallPaddingY ] ]
+          [ div [ classes [ aHorizontal, fullWidth, bgGrayDark, paddingX, smallPaddingY ] ]
               [ div [ classes [ group, aHorizontal, ClassName "marlowe-title-group" ] ]
                   [ div [ class_ (ClassName "marlowe-logo"), onClick $ const $ Just $ ChangeView HomePage ] [ marloweIcon ]
                   , h2 [ classes [ paddingLeft, uppercase, spaceRight ] ] [ text "Marlowe Playground" ]
@@ -61,15 +60,11 @@ render state =
                   [ slot _actusBlocklySlot unit (ActusBlockly.blockly AMB.rootBlockName AMB.blockDefinitions AMB.toolbox) unit (Just <<< HandleActusBlocklyMessage)
                   , AMB.workspaceBlocks
                   ]
-              , tabContents WalletEmulator
-                  [ div [ classes [ ClassName "full-height" ] ]
-                      [ slot _walletSlot unit Wallet.mkComponent unit (Just <<< HandleWalletMessage) ]
-                  ]
               ]
           ]
       , modal state
       , globalLoadingOverlay
-      , footer [ classes [ flex, justifyBetween, paddingX, smallPaddingY, bgDark ] ]
+      , footer [ classes [ flex, justifyBetween, paddingX, smallPaddingY, bgGrayDark ] ]
           [ div [ classes [ flex ] ]
               [ a [ href "https://cardano.org/", target "_blank", class_ smallPaddingRight ] [ text "cardano.org" ]
               , vl
@@ -112,7 +107,7 @@ render state =
 
   isActiveTab activeView = if isActiveView activeView then [ active ] else []
 
-  tabContents activeView contents = if isActiveView activeView then div [ classes [ fullHeight ] ] contents else div [ classes [ hide ] ] contents
+  tabContents activeView contents = if isActiveView activeView then div [ classes [ fullHeight ] ] contents else div [ classes [ hidden ] ] contents
 
   topBar = div [ class_ (ClassName "global-actions") ] ([ menuBar state ] <> otherActions (state ^. _view))
 

@@ -67,7 +67,8 @@ data Action
   | ToggleMenu
   | SetScreen Screen
   | OpenCard Card
-  | CloseCard
+  | CloseCard Card
+  | UpdateFromStorage
   | UpdateRunningContracts (Map MarloweParams MarloweData)
   | AdvanceTimedoutSteps
   | TemplateAction Template.Action
@@ -85,7 +86,8 @@ instance actionIsEvent :: IsEvent Action where
   toEvent ToggleMenu = Just $ defaultEvent "ToggleMenu"
   toEvent (SetScreen _) = Just $ defaultEvent "SetScreen"
   toEvent (OpenCard _) = Nothing
-  toEvent CloseCard = Nothing
+  toEvent (CloseCard _) = Nothing
+  toEvent UpdateFromStorage = Nothing
   toEvent (UpdateRunningContracts _) = Nothing
   toEvent AdvanceTimedoutSteps = Nothing
   toEvent (TemplateAction templateAction) = toEvent templateAction

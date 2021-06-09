@@ -231,6 +231,7 @@
         "optparse-applicative".revision = (((hackage."optparse-applicative")."0.16.1.0").revisions).default;
         "optparse-applicative".flags.process = true;
         "statistics-linreg".revision = (((hackage."statistics-linreg")."0.3").revisions).default;
+        "IntervalMap".revision = (((hackage."IntervalMap")."0.6.1.2").revisions).default;
         "network".revision = (((hackage."network")."3.1.2.1").revisions).default;
         "network".flags.devel = false;
         "word8".revision = (((hackage."word8")."0.1.3").revisions).default;
@@ -307,6 +308,7 @@
         "call-stack".revision = (((hackage."call-stack")."0.3.0").revisions).default;
         "primitive".revision = (((hackage."primitive")."0.7.1.0").revisions).default;
         "profunctors".revision = (((hackage."profunctors")."5.6").revisions).default;
+        "fin".revision = (((hackage."fin")."0.1.1").revisions).default;
         "safe".revision = (((hackage."safe")."0.3.19").revisions).default;
         "size-based".revision = (((hackage."size-based")."0.1.2.0").revisions).default;
         "ListLike".revision = (((hackage."ListLike")."4.7.4").revisions).default;
@@ -318,6 +320,7 @@
         "math-functions".revision = (((hackage."math-functions")."0.3.4.2").revisions).default;
         "math-functions".flags.system-expm1 = true;
         "math-functions".flags.system-erf = true;
+        "tasty-bench".revision = (((hackage."tasty-bench")."0.2.5").revisions).default;
         "regex-compat".revision = (((hackage."regex-compat")."0.95.2.1").revisions).default;
         "time-compat".revision = (((hackage."time-compat")."1.9.5").revisions).default;
         "time-compat".flags.old-locale = false;
@@ -380,6 +383,10 @@
         "these".flags.assoc = true;
         "bimap".revision = (((hackage."bimap")."0.4.0").revisions).default;
         "dependent-sum".revision = (((hackage."dependent-sum")."0.5").revisions).default;
+        "ral".revision = (((hackage."ral")."0.1").revisions).default;
+        "ral".flags.semigroupoids = true;
+        "ral".flags.adjunctions = true;
+        "ral".flags.distributive = true;
         "socks".revision = (((hackage."socks")."0.6.1").revisions).default;
         "wai-cors".revision = (((hackage."wai-cors")."0.2.7").revisions).default;
         "ekg-core".revision = (((hackage."ekg-core")."0.1.1.7").revisions).default;
@@ -412,7 +419,6 @@
         "cryptohash-sha1".revision = (((hackage."cryptohash-sha1")."0.11.100.1").revisions).default;
         "serialise".revision = (((hackage."serialise")."0.2.3.0").revisions).default;
         "serialise".flags.newtime15 = true;
-        "flat".revision = (((hackage."flat")."0.4.4").revisions).default;
         "wl-pprint".revision = (((hackage."wl-pprint")."1.2.1").revisions).default;
         "hostname".revision = (((hackage."hostname")."1.0").revisions).default;
         "tasty-smallcheck".revision = (((hackage."tasty-smallcheck")."0.8.2").revisions).default;
@@ -496,6 +502,7 @@
         "bech32".revision = (((hackage."bech32")."1.1.0").revisions).default;
         "bech32".flags.release = false;
         "bech32".flags.werror = false;
+        "bin".revision = (((hackage."bin")."0.1").revisions).default;
         "managed".revision = (((hackage."managed")."1.0.8").revisions).default;
         "terminfo".revision = (((hackage."terminfo")."0.4.1.4").revisions).default;
         "base16-bytestring".revision = (((hackage."base16-bytestring")."1.0.1.0").revisions).default;
@@ -584,6 +591,7 @@
         "tls".flags.compat = true;
         "tls".flags.network = true;
         "tls".flags.hans = false;
+        "list-t".revision = (((hackage."list-t")."1.0.4").revisions).default;
         "kan-extensions".revision = (((hackage."kan-extensions")."5.2.2").revisions).default;
         "nonempty-vector".revision = (((hackage."nonempty-vector")."0.2.1.0").revisions).default;
         "wai-logger".revision = (((hackage."wai-logger")."2.3.6").revisions).default;
@@ -700,6 +708,7 @@
         cardano-crypto-wrapper = ./.plan.nix/cardano-crypto-wrapper.nix;
         cardano-ledger-test = ./.plan.nix/cardano-ledger-test.nix;
         plutus-use-cases = ./.plan.nix/plutus-use-cases.nix;
+        flat = ./.plan.nix/flat.nix;
         plutus-playground-server = ./.plan.nix/plutus-playground-server.nix;
         shelley-spec-ledger = ./.plan.nix/shelley-spec-ledger.nix;
         typed-protocols-examples = ./.plan.nix/typed-protocols-examples.nix;
@@ -738,8 +747,10 @@
         cardano-crypto = ./.plan.nix/cardano-crypto.nix;
         plutus-tx = ./.plan.nix/plutus-tx.nix;
         prettyprinter-configurable = ./.plan.nix/prettyprinter-configurable.nix;
+        word-array = ./.plan.nix/word-array.nix;
         plutus-pab = ./.plan.nix/plutus-pab.nix;
         cardano-prelude-test = ./.plan.nix/cardano-prelude-test.nix;
+        plutus-chain-index = ./.plan.nix/plutus-chain-index.nix;
         byron-spec-ledger = ./.plan.nix/byron-spec-ledger.nix;
         small-steps-test = ./.plan.nix/small-steps-test.nix;
         marlowe-playground-server = ./.plan.nix/marlowe-playground-server.nix;
@@ -775,6 +786,7 @@
           "plutus-use-cases" = {
             flags = { "defer-plugin-errors" = lib.mkOverride 900 false; };
             };
+          "flat" = { flags = {}; };
           "plutus-playground-server" = {
             flags = { "defer-plugin-errors" = lib.mkOverride 900 false; };
             };
@@ -864,12 +876,14 @@
             };
           "plutus-tx" = { flags = {}; };
           "prettyprinter-configurable" = { flags = {}; };
+          "word-array" = { flags = {}; };
           "plutus-pab" = {
             flags = { "defer-plugin-errors" = lib.mkOverride 900 false; };
             };
           "cardano-prelude-test" = {
             flags = { "development" = lib.mkOverride 900 false; };
             };
+          "plutus-chain-index" = { flags = {}; };
           "byron-spec-ledger" = {
             flags = { "development" = lib.mkOverride 900 false; };
             };

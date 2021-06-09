@@ -92,7 +92,7 @@ cardNavigationButtons state =
               [ classNames [ "text-purple" ]
               , onClick_ $ MoveToStep $ selectedStep - 1
               ]
-              [ icon ArrowLeft [ "text-2xl" ] ]
+              [ icon ArrowLeft [ "text-2xl", "py-4" ] ]
       | otherwise = Nothing
 
     rightButton selectedStep
@@ -116,6 +116,7 @@ cardNavigationButtons state =
           , rightButton (state ^. _selectedStep)
           ]
 
+-- TODO: This is a lot like the `contractSetupConfirmationCard` in `Template.View`. Consider factoring out a shared component.
 actionConfirmationCard :: forall p. Assets -> State -> NamedAction -> HTML p Action
 actionConfirmationCard assets state namedAction =
   let
@@ -152,9 +153,13 @@ actionConfirmationCard assets state namedAction =
         ]
       _ -> [ transactionFeeItem false ]
 
+    -- TODO: when we allow custom currency other than ada, we won't be able to add the deposit amount
+    -- to the transaction fee (always in ada)
     totalToPay = case namedAction of
-      MakeDeposit _ _ token amount -> text $ humanizeValue token $ amount + transactionFee
-      _ -> text $ humanizeValue adaToken transactionFee
+      MakeDeposit _ _ _ amount -> amount + transactionFee
+      _ -> transactionFee
+
+    hasSufficientFunds = getAda assets >= totalToPay
   in
     div_
       [ div [ classNames [ "flex", "font-semibold", "justify-between", "bg-lightgray", "p-5" ] ]
@@ -175,7 +180,7 @@ actionConfirmationCard assets state namedAction =
               [ text "Confirm payment of:" ]
           , div
               [ classNames [ "mb-4", "text-purple", "font-semibold", "text-2xl" ] ]
-              [ totalToPay ]
+              [ text $ humanizeValue adaToken totalToPay ]
           , div [ classNames [ "flex", "justify-center" ] ]
               [ button
                   [ classNames $ Css.secondaryButton <> [ "mr-2", "flex-1" ]
@@ -185,9 +190,16 @@ actionConfirmationCard assets state namedAction =
               , button
                   [ classNames $ Css.primaryButton <> [ "flex-1" ]
                   , onClick_ $ ConfirmAction namedAction
+                  , enabled hasSufficientFunds
                   ]
                   [ text cta ]
               ]
+          , div
+              [ classNames [ "my-4", "text-sm", "text-red" ] ]
+              if hasSufficientFunds then
+                []
+              else
+                [ text "You have insufficient funds to complete this transaction." ]
           , div [ classNames [ "bg-black", "text-white", "p-4", "mt-4", "rounded" ] ]
               [ h3 [ classNames [ "text-sm", "font-semibold" ] ] [ sup_ [ text "*" ], text "Transaction fees are estimates only:" ]
               , p [ classNames [ "pb-4", "border-b-half", "border-lightgray", "text-xs", "text-gray" ] ]
@@ -207,11 +219,9 @@ actionConfirmationCard assets state namedAction =
           ]
       ]
 
-renderContractCard :: forall p. Int -> State -> Array (HTML p Action) -> HTML p Action
-renderContractCard stepNumber state cardBody =
+renderContractCard :: forall p. Int -> State -> Tab -> Array (HTML p Action) -> HTML p Action
+renderContractCard stepNumber state currentTab cardBody =
   let
-    currentTab = state ^. _tab
-
     tabSelector isActive =
       [ "flex-grow", "text-center", "py-2", "trapesodial-card-selector", "text-sm", "font-semibold" ]
         <> case isActive of
@@ -235,12 +245,12 @@ renderContractCard stepNumber state cardBody =
       [ div [ classNames [ "flex", "overflow-hidden" ] ]
           [ a
               [ classNames (tabSelector $ currentTab == Tasks)
-              , onClick_ $ SelectTab Tasks
+              , onClick_ $ SelectTab stepNumber Tasks
               ]
               [ span_ $ [ text "Tasks" ] ]
           , a
               [ classNames (tabSelector $ currentTab == Balances)
-              , onClick_ $ SelectTab Balances
+              , onClick_ $ SelectTab stepNumber Balances
               ]
               [ span_ $ [ text "Balances" ] ]
           ]
@@ -259,8 +269,7 @@ statusIndicator mIcon status extraClasses =
 renderPastStep :: forall p. State -> Int -> PreviousStep -> HTML p Action
 renderPastStep state stepNumber step =
   let
-    -- FIXME: We need to make the tab independent.
-    currentTab = state ^. _tab
+    currentTab = step ^. _tab
 
     renderBody Tasks { state: TransactionStep txInput } = renderPastActions state txInput
 
@@ -268,7 +277,7 @@ renderPastStep state stepNumber step =
 
     renderBody Balances { balances } = renderBalances state balances
   in
-    renderContractCard stepNumber state
+    renderContractCard stepNumber state currentTab
       [ div [ classNames [ "py-2.5", "px-4", "flex", "items-center", "border-b", "border-lightgray" ] ]
           [ span
               [ classNames [ "text-xl", "font-semibold", "flex-grow" ] ]
@@ -398,7 +407,7 @@ renderCurrentStep currentSlot state =
         (\nextTimeout -> humanizeDuration $ secondsDiff nextTimeout currentSlot)
         mNextTimeout
   in
-    renderContractCard stepNumber state
+    renderContractCard stepNumber state currentTab
       [ div [ classNames [ "py-2.5", "px-4", "flex", "items-center", "border-b", "border-lightgray" ] ]
           [ span
               [ classNames [ "text-xl", "font-semibold", "flex-grow" ] ]
@@ -521,7 +530,7 @@ renderPartyTasks state party actions =
 -- FIXME: This was added to allow anybody being able to do any actions for debug purposes...
 --        Remove once the PAB is connected
 debugMode :: Boolean
-debugMode = true
+debugMode = false
 
 -- The Party parameter represents who is taking the action
 renderAction :: forall p. State -> Party -> NamedAction -> HTML p Action

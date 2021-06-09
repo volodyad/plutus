@@ -24,7 +24,7 @@ module Plutus.Contracts.Governance (
     , Proposal(..)
     , Schema
     , mkTokenName
-    , scriptInstance
+    , typedValidator
     , mkValidator
     , GovState(..)
     , Voting(..)
@@ -50,7 +50,7 @@ import qualified Plutus.Contract.StateMachine as SM
 import qualified PlutusTx
 import qualified PlutusTx.AssocMap            as AssocMap
 import           PlutusTx.Prelude
-import qualified Prelude
+import qualified Prelude                      as Haskell
 
 -- $governance
 -- * When the contract starts it produces a number of tokens that represent voting rights.
@@ -66,14 +66,14 @@ data Proposal = Proposal
     , votingDeadline :: Slot
     -- ^ The slot when voting ends and the votes are tallied.
     }
-    deriving stock (Show, Generic)
+    deriving stock (Haskell.Show, Generic)
     deriving anyclass (ToJSON, FromJSON)
 
 data Voting = Voting
     { proposal :: Proposal
     , votes    :: AssocMap.Map TokenName Bool
     }
-    deriving stock (Show, Generic)
+    deriving stock (Haskell.Show, Generic)
     deriving anyclass (ToJSON, FromJSON)
 
 data GovState = GovState
@@ -81,7 +81,7 @@ data GovState = GovState
     , mph    :: MonetaryPolicyHash
     , voting :: Maybe Voting
     }
-    deriving stock (Show, Generic)
+    deriving stock (Haskell.Show, Generic)
     deriving anyclass (ToJSON, FromJSON)
 
 data GovInput
@@ -89,7 +89,7 @@ data GovInput
     | ProposeChange Proposal
     | AddVote TokenName Bool
     | FinishVoting
-    deriving stock (Show, Generic)
+    deriving stock (Haskell.Show, Generic)
     deriving anyclass (ToJSON, FromJSON)
 
 -- | The endpoints of governance contracts are
@@ -114,7 +114,7 @@ data Params = Params
 data GovError =
     GovContractError ContractError
     | GovStateMachineError SM.SMContractError
-    deriving stock (Prelude.Eq, Show, Generic)
+    deriving stock (Haskell.Eq, Haskell.Show, Generic)
     deriving anyclass (ToJSON, FromJSON)
 
 makeClassyPrisms ''GovError
@@ -137,19 +137,19 @@ machine params = SM.mkStateMachine Nothing (transition params) isFinal where
 mkValidator :: Params -> Scripts.ValidatorType GovernanceMachine
 mkValidator params = SM.mkValidator $ machine params
 
-scriptInstance :: Params -> Scripts.ScriptInstance GovernanceMachine
-scriptInstance = Scripts.validatorParam @GovernanceMachine
+typedValidator :: Params -> Scripts.TypedValidator GovernanceMachine
+typedValidator = Scripts.mkTypedValidatorParam @GovernanceMachine
     $$(PlutusTx.compile [|| mkValidator ||])
     $$(PlutusTx.compile [|| wrap ||])
     where
         wrap = Scripts.wrapValidator
 
 client :: Params -> SM.StateMachineClient GovState GovInput
-client params = SM.mkStateMachineClient $ SM.StateMachineInstance (machine params) (scriptInstance params)
+client params = SM.mkStateMachineClient $ SM.StateMachineInstance (machine params) (typedValidator params)
 
 -- | Generate a voting token name by tagging on a number after the base token name.
 mkTokenName :: TokenName -> Integer -> TokenName
-mkTokenName base ix = fromString (Value.toString base ++ show ix)
+mkTokenName base ix = fromString (Value.toString base ++ Haskell.show ix)
 
 {-# INLINABLE votingValue #-}
 votingValue :: MonetaryPolicyHash -> TokenName -> Value.Value
@@ -201,9 +201,9 @@ contract params = forever $ mapError (review _GovError) endpoints where
 
     initLaw = do
         bsLaw <- endpoint @"new-law"
-        let mph = Scripts.monetaryPolicyHash (scriptInstance params)
+        let mph = Scripts.forwardingMonetaryPolicyHash (typedValidator params)
         void $ SM.runInitialise theClient (GovState bsLaw mph Nothing) mempty
-        let tokens = zipWith (const (mkTokenName (baseTokenName params))) (initialHolders params) [1..]
+        let tokens = Haskell.zipWith (const (mkTokenName (baseTokenName params))) (initialHolders params) [1..]
         SM.runStep theClient $ ForgeTokens tokens
 
 -- | The contract for proposing changes to a law.
