@@ -17,6 +17,9 @@ module Plutus.Contract.Effects.WatchAddress(
     nextTransactionsAt,
     fundsAtAddressGt,
     fundsAtAddressGeq,
+    fundsAtAddressLt,
+    fundsAtAddressLeq,
+    fundsAtAddressCondition,
     events,
     watchAddressRequest,
     watchedAddress,
@@ -25,6 +28,7 @@ module Plutus.Contract.Effects.WatchAddress(
     event
     ) where
 
+import           Control.Lens                      (review)
 import           Data.Map                          (Map)
 import qualified Data.Map                          as Map
 import           Data.Row
@@ -38,10 +42,10 @@ import           Plutus.Contract.Effects.AwaitSlot (HasAwaitSlot, awaitSlot, cur
 import           Plutus.Contract.Effects.UtxoAt    (HasUtxoAt, utxoAt)
 import           Plutus.Contract.Request           (ContractRow, requestMaybe)
 import           Plutus.Contract.Schema            (Event (..), Handlers (..), Input, Output)
-import           Plutus.Contract.Types             (AsContractError, Contract)
+import           Plutus.Contract.Types             (AsContractError, Contract, ContractError, checkpointLoop, mapError)
 import           Plutus.Contract.Util              (loopM)
-import           Wallet.Types                      (AddressChangeRequest (..), AddressChangeResponse (..), slotRange,
-                                                    targetSlot)
+import           Wallet.Types                      (AddressChangeRequest (..), AddressChangeResponse (..),
+                                                    _ContractError, slotRange, targetSlot)
 
 type AddressSymbol = "address"
 
@@ -82,7 +86,8 @@ nextTransactionsAt ::
     -> Contract w s e [OnChainTx]
 nextTransactionsAt addr = do
     initial <- currentSlot
-    let go sl = do
+    let go :: Slot -> Contract w s ContractError (Either [OnChainTx] Slot)
+        go sl = do
             txns <- acrTxns <$> addressChangeRequest AddressChangeRequest
                 { acreqSlotRangeFrom = sl
                 , acreqSlotRangeTo = sl
@@ -90,9 +95,9 @@ nextTransactionsAt addr = do
                 }
 
             if null txns
-                then go (succ sl)
-                else pure txns
-    go initial
+                then pure $ Right (succ sl)
+                else pure $ Left txns
+    mapError (review _ContractError) (checkpointLoop go initial)
 
 -- | Watch an address for changes, and return the outputs
 --   at that address when the total value at the address
@@ -109,6 +114,8 @@ fundsAtAddressGt
 fundsAtAddressGt addr vl =
     fundsAtAddressCondition (\presentVal -> presentVal `V.gt` vl) addr
 
+-- | Watch an address for changes, and return the outputs
+--   at that address when the condition succeeds.
 fundsAtAddressCondition
     :: forall w s e.
        ( AsContractError e
@@ -141,6 +148,36 @@ fundsAtAddressGeq
     -> Contract w s e UtxoMap
 fundsAtAddressGeq addr vl =
     fundsAtAddressCondition (\presentVal -> presentVal `V.geq` vl) addr
+
+-- | Watch an address for changes, and return the outputs
+--   at that address when the total value at the address
+--   has fallen below the given value.
+fundsAtAddressLt
+    :: forall w s e.
+       ( AsContractError e
+       , HasAwaitSlot s
+       , HasUtxoAt s
+       )
+    => Address
+    -> Value
+    -> Contract w s e UtxoMap
+fundsAtAddressLt addr vl =
+    fundsAtAddressCondition (\presentVal -> presentVal `V.lt` vl) addr
+
+-- | Watch an address for changes, and return the outputs
+--   at that address when the total value at the address
+--   has reached or fallen below the given value.
+fundsAtAddressLeq
+    :: forall w s e.
+       ( AsContractError e
+       , HasAwaitSlot s
+       , HasUtxoAt s
+       )
+    => Address
+    -> Value
+    -> Contract w s e UtxoMap
+fundsAtAddressLeq addr vl =
+    fundsAtAddressCondition (\presentVal -> presentVal `V.leq` vl) addr
 
 -- | The 'AddressChangeResponse' events for all addresses touched by the
 --   transaction. The 'AddressMap' is used to lookup the addresses of outputs

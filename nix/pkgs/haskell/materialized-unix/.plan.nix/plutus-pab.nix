@@ -45,6 +45,7 @@
           (hsPkgs."async" or (errorHandler.buildDepError "async"))
           (hsPkgs."base" or (errorHandler.buildDepError "base"))
           (hsPkgs."bytestring" or (errorHandler.buildDepError "bytestring"))
+          (hsPkgs."cardano-api" or (errorHandler.buildDepError "cardano-api"))
           (hsPkgs."cardano-crypto" or (errorHandler.buildDepError "cardano-crypto"))
           (hsPkgs."cardano-prelude" or (errorHandler.buildDepError "cardano-prelude"))
           (hsPkgs."cardano-slotting" or (errorHandler.buildDepError "cardano-slotting"))
@@ -356,19 +357,6 @@
             "examples/atomic-swap-contract"
             ];
           mainPath = [ "TestPSGenerator.hs" ];
-          };
-        "prism-credential-manager" = {
-          depends = [
-            (hsPkgs."base" or (errorHandler.buildDepError "base"))
-            (hsPkgs."plutus-pab" or (errorHandler.buildDepError "plutus-pab"))
-            (hsPkgs."plutus-use-cases" or (errorHandler.buildDepError "plutus-use-cases"))
-            (hsPkgs."plutus-contract" or (errorHandler.buildDepError "plutus-contract"))
-            ];
-          buildable = true;
-          hsSourceDirs = [ "examples/prism/credential-manager" ];
-          mainPath = [
-            "Main.hs"
-            ] ++ (pkgs.lib).optional (flags.defer-plugin-errors) "";
           };
         "prism-mirror" = {
           depends = [

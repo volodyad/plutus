@@ -11,6 +11,8 @@
 
 module PSGenerator
     ( generate
+    , pabBridge
+    , pabTypes
     ) where
 
 import           Cardano.Metadata.Types                     (AnnotatedSignature, HashFunction, Property, PropertyKey,
@@ -30,7 +32,7 @@ import           Language.PureScript.Bridge.CodeGenSwitches (ForeignOptions (For
 import           Language.PureScript.Bridge.TypeParameters  (A)
 import           Ledger.Constraints.OffChain                (UnbalancedTx)
 import qualified PSGenerator.Common
-import           Plutus.Contract.Checkpoint                 (CheckpointKey, CheckpointStore)
+import           Plutus.Contract.Checkpoint                 (CheckpointKey, CheckpointStore, CheckpointStoreItem)
 import           Plutus.Contract.Effects.AwaitSlot          (WaitingForSlot)
 import           Plutus.Contract.Effects.AwaitTxConfirmed   (TxConfirmed)
 import           Plutus.Contract.Effects.ExposeEndpoint     (ActiveEndpoint, EndpointValue)
@@ -39,7 +41,6 @@ import           Plutus.Contract.Effects.OwnPubKey          (OwnPubKeyRequest)
 import           Plutus.Contract.Effects.UtxoAt             (UtxoAtAddress)
 import           Plutus.Contract.Effects.WriteTx            (WriteTxResponse)
 import           Plutus.Contract.Resumable                  (Responses)
-import           Plutus.Contract.State                      (ContractRequest, State)
 import           Plutus.PAB.Effects.Contract.ContractExe    (ContractExe)
 import           Plutus.PAB.Events.Contract                 (ContractPABRequest, ContractPABResponse)
 import           Plutus.PAB.Events.ContractInstanceState    (PartiallyDecodedResponse)
@@ -55,8 +56,9 @@ import           Servant.PureScript                         (HasBridge, Settings
                                                              writeAPIModuleWithSettings)
 import           Wallet.Effects                             (AddressChangeRequest (..), AddressChangeResponse (..))
 
-myBridge :: BridgePart
-myBridge =
+-- | PAB's main bridge that includes common bridges
+pabBridge :: BridgePart
+pabBridge =
     PSGenerator.Common.aesonBridge <|>
     PSGenerator.Common.containersBridge <|>
     PSGenerator.Common.languageBridge <|>
@@ -78,16 +80,17 @@ metadataBridge = do
   name <- view (haskType . typeName)
   pure $ TypeInfo "plutus-pab" moduleName name []
 
-data MyBridge
+data PabBridge
 
-myBridgeProxy :: Proxy MyBridge
-myBridgeProxy = Proxy
+pabBridgeProxy :: Proxy PabBridge
+pabBridgeProxy = Proxy
 
-instance HasBridge MyBridge where
-    languageBridge _ = buildBridge myBridge
+instance HasBridge PabBridge where
+    languageBridge _ = buildBridge pabBridge
 
-myTypes :: [SumType 'Haskell]
-myTypes =
+-- | PAB's list of types that includes common types
+pabTypes :: [SumType 'Haskell]
+pabTypes =
     PSGenerator.Common.ledgerTypes <>
     PSGenerator.Common.playgroundTypes <>
     PSGenerator.Common.walletTypes <>
@@ -98,7 +101,6 @@ myTypes =
     , (equal <*> (genericShow <*> mkSumType))
           (Proxy @(ContractSignatureResponse A))
     , (equal <*> (genericShow <*> mkSumType)) (Proxy @(PartiallyDecodedResponse A))
-    , (equal <*> (genericShow <*> mkSumType)) (Proxy @(ContractRequest A))
     , (equal <*> (genericShow <*> mkSumType)) (Proxy @ContractPABRequest)
     , (equal <*> (genericShow <*> mkSumType)) (Proxy @ContractPABResponse)
     , (equal <*> (genericShow <*> mkSumType)) (Proxy @UnbalancedTx)
@@ -111,9 +113,9 @@ myTypes =
     , (equal <*> (genericShow <*> mkSumType)) (Proxy @UtxoAtAddress)
     , (equal <*> (genericShow <*> mkSumType)) (Proxy @WriteTxResponse)
     , (equal <*> (genericShow <*> mkSumType)) (Proxy @WaitingForSlot)
-    , (equal <*> (genericShow <*> mkSumType)) (Proxy @(State A))
     , (equal <*> (genericShow <*> mkSumType)) (Proxy @CheckpointStore)
     , (order <*> (genericShow <*> mkSumType)) (Proxy @CheckpointKey)
+    , (equal <*> (genericShow <*> mkSumType)) (Proxy @(CheckpointStoreItem A))
     , (equal <*> (genericShow <*> mkSumType)) (Proxy @(Responses A))
     , (equal <*> (genericShow <*> mkSumType)) (Proxy @AddressChangeRequest)
     , (equal <*> (genericShow <*> mkSumType)) (Proxy @AddressChangeResponse)
@@ -151,11 +153,11 @@ generate outputDir = do
     writeAPIModuleWithSettings
         mySettings
         outputDir
-        myBridgeProxy
+        pabBridgeProxy
         (Proxy @(API.API ContractExe :<|> API.NewAPI ContractExe Text.Text :<|> (API.WalletProxy Text.Text)))
     writePSTypesWith
         (genForeign (ForeignOptions {unwrapSingleConstructors = True}))
         outputDir
-        (buildBridge myBridge)
-        myTypes
+        (buildBridge pabBridge)
+        pabTypes
     putStrLn $ "Done: " <> outputDir

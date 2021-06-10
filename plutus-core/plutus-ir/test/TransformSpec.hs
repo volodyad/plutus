@@ -75,6 +75,7 @@ letFloat =
   ,"strictValueNonValue"
   ,"strictValueValue"
   ,"even3Eval"
+  ,"strictNonValueDeep"
   ]
 
 instance Semigroup SourcePos where
@@ -92,6 +93,7 @@ inline =
     , "constant"
     , "transitive"
     , "tyvar"
+    , "single"
     ]
 
 

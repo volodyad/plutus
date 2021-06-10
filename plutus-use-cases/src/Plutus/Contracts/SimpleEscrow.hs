@@ -13,6 +13,7 @@
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS -fplugin-opt Language.PlutusTx.Plugin:debug-context #-}
+{-# OPTIONS_GHC -fplugin-opt PlutusTx.Plugin:max-simplifier-iterations=4 #-}
 
 -- | This simple escrow contract facilitiates and exchange of currencies.
 module Plutus.Contracts.SimpleEscrow
@@ -90,15 +91,15 @@ newtype RedeemSuccess = RedeemSuccess TxId
     deriving (Haskell.Eq, Haskell.Show)
 
 data Escrow
-instance Scripts.ScriptType Escrow where
+instance Scripts.ValidatorTypes Escrow where
     type instance RedeemerType Escrow = Action
     type instance DatumType    Escrow = EscrowParams
 
 escrowAddress :: Ledger.Address
-escrowAddress = Scripts.scriptAddress escrowInstance
+escrowAddress = Scripts.validatorAddress escrowInstance
 
-escrowInstance :: Scripts.ScriptInstance Escrow
-escrowInstance = Scripts.validator @Escrow
+escrowInstance :: Scripts.TypedValidator Escrow
+escrowInstance = Scripts.mkTypedValidator @Escrow
     $$(PlutusTx.compile [|| validate ||])
     $$(PlutusTx.compile [|| wrap ||])
       where

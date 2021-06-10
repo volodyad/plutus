@@ -17,7 +17,6 @@ import           Control.Monad.Reader
 import           Control.Lens
 
 import qualified PlutusCore                    as PLC
-import qualified PlutusCore.Constant           as PLC
 import qualified PlutusCore.MkPlc              as PLC
 import           PlutusCore.Quote
 import qualified PlutusCore.StdLib.Type        as Types
@@ -41,14 +40,15 @@ makeLenses ''PirTCConfig
 instance PLC.HasTypeCheckConfig (PirTCConfig uni fun) uni fun where
     typeCheckConfig = pirConfigTCConfig
 
-newtype CompilationOpts = CompilationOpts {
-    _coOptimize :: Bool
+data CompilationOpts = CompilationOpts {
+      _coOptimize                :: Bool
+    , _coMaxSimplifierIterations :: Int
     } deriving (Eq, Show)
 
 makeLenses ''CompilationOpts
 
 defaultCompilationOpts :: CompilationOpts
-defaultCompilationOpts = CompilationOpts True
+defaultCompilationOpts = CompilationOpts True 8
 
 data CompilationCtx uni fun a = CompilationCtx {
     _ccOpts              :: CompilationOpts
@@ -111,8 +111,8 @@ type Compiling m e uni fun a =
     , MonadError e m
     , MonadQuote m
     , Ord a
-    , PLC.GShow uni, PLC.GEq uni
-    , PLC.ToBuiltinMeaning uni fun
+    , PLC.Typecheckable uni fun
+    , PLC.GEq uni
     )
 
 type TermDef tyname name uni fun a = PLC.Def (PLC.VarDecl tyname name uni fun a) (PIR.Term tyname name uni fun a)
